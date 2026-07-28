@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' mdr: data: https:; font-src 'self' data:; connect-src 'self'"
+    />
+    <title>Markdown Reader</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="titlebar">
+        <div id="titlebar-left">
+          <button id="btn-toggle-sidebar" class="tb-btn" title=""></button>
+        </div>
+        <div id="titlebar-title"><span id="doc-title"></span><span id="doc-dirty" hidden>●</span></div>
+        <div id="titlebar-right">
+          <button id="btn-mode" class="tb-btn" title=""></button>
+          <button id="btn-theme" class="tb-btn" title=""></button>
+          <button id="btn-settings" class="tb-btn" title=""></button>
+          <button id="btn-toggle-outline" class="tb-btn" title=""></button>
+          <div id="overlay-spacer"></div>
+        </div>
+      </header>
+      <main id="layout">
+        <aside id="sidebar">
+          <div id="sidebar-header"></div>
+          <div id="filetree" tabindex="0"></div>
+        </aside>
+        <div id="resize-left" class="resize-handle"></div>
+        <section id="content">
+          <div id="welcome" hidden></div>
+          <div id="viewer-scroll">
+            <article id="viewer" class="markdown-body"></article>
+          </div>
+          <div id="editor" hidden></div>
+        </section>
+        <div id="resize-right" class="resize-handle"></div>
+        <aside id="outline">
+          <div id="outline-header"></div>
+          <div id="outline-list"></div>
+        </aside>
+      </main>
+    </div>
+    <div id="findbar" hidden></div>
+    <div id="palette-overlay" hidden><div id="palette"></div></div>
+    <div id="settings-overlay" hidden><div id="settings-modal"></div></div>
+    <div id="toast-container"></div>
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>

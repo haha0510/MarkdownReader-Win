@@ -1,0 +1,43 @@
+{
+  "name": "markdown-reader-win",
+  "productName": "Markdown Reader",
+  "version": "0.1.0",
+  "description": "不是又一个全能编辑器,只是一个安静的 Markdown 阅读器 — Windows 版",
+  "main": "./out/main/index.js",
+  "author": "MarkdownReader-Win",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "icon": "node scripts/make-icon.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "electron-vite build && electron-builder --win",
+    "e2e": "node tests/e2e.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@codemirror/lang-markdown": "^6.3.0",
+    "@codemirror/language-data": "^6.5.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.10.0",
+    "@vscode/markdown-it-katex": "^1.1.1",
+    "chokidar": "^4.0.1",
+    "codemirror": "^6.0.1",
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^3.1.0",
+    "highlight.js": "^11.11.1",
+    "katex": "^0.16.21",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-task-lists": "^2.1.1",
+    "mermaid": "^11.4.1",
+    "plantuml-encoder": "^1.4.0",
+    "playwright-core": "^1.49.1",
+    "sharp": "^0.33.5",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}
