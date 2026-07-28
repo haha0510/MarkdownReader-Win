@@ -69,7 +69,7 @@ export const store = {
       const next = patch[k]
       const prev = state[k]
       if (next !== prev) {
-        ;(state as Record<string, unknown>)[k] = next
+        ;(state as unknown as Record<string, unknown>)[k] = next
         changed.push([k, next, prev])
       }
     }

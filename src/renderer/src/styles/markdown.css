@@ -1,0 +1,269 @@
+/* markdown 正文排版 — 全部作用域于 .markdown-body,颜色/字体只消费 CONTRACTS §4 变量 */
+
+.markdown-body {
+  font-family: var(--md-body-font, var(--ui-font));
+  font-size: var(--md-font-size, 16px);
+  line-height: var(--md-line-height, 1.7);
+  color: var(--md-fg);
+  max-width: var(--md-max-width, 820px);
+  margin: 0 auto;
+  padding: 32px 48px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 首尾元素去边距 */
+.markdown-body > :first-child { margin-top: 0 !important; }
+.markdown-body > :last-child { margin-bottom: 0 !important; }
+
+/* ── 标题 ── */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-family: var(--md-heading-font, var(--md-body-font, var(--ui-font)));
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 24px 0 16px;
+  color: var(--md-heading);
+}
+.markdown-body h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-border); }
+.markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-border); }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: 0.875em; }
+.markdown-body h6 { font-size: 0.85em; color: var(--md-blockquote-fg); }
+
+/* ── 段落 / 行内 ── */
+.markdown-body p { margin: 0 0 16px; }
+.markdown-body strong { font-weight: 600; }
+.markdown-body em { font-style: italic; }
+.markdown-body del { text-decoration: line-through; color: var(--md-blockquote-fg); }
+.markdown-body sup { font-size: 0.75em; vertical-align: super; }
+.markdown-body sub { font-size: 0.75em; vertical-align: sub; }
+
+.markdown-body a {
+  color: var(--md-link);
+  text-decoration: none;
+}
+.markdown-body a:hover { text-decoration: underline; }
+
+.markdown-body mark {
+  background: var(--md-mark-bg);
+  color: var(--md-fg);
+  padding: 0.1em 0.2em;
+  border-radius: 3px;
+}
+
+.markdown-body kbd {
+  font-family: var(--md-code-font, var(--mono-font));
+  font-size: 0.85em;
+  line-height: 1;
+  padding: 3px 6px;
+  background: var(--md-inline-code-bg);
+  border: 1px solid var(--md-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* ── 列表 ── */
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 16px;
+  padding-left: 2em;
+}
+.markdown-body li { margin: 4px 0; }
+.markdown-body li > p { margin-bottom: 8px; }
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin: 4px 0 0;
+}
+
+/* 任务列表:去项目符号,checkbox 拉回列表槽位 */
+.markdown-body li.task-list-item { list-style: none; }
+.markdown-body .task-list-item-checkbox {
+  accent-color: var(--ui-accent);
+  width: 14px;
+  height: 14px;
+  margin: 0 0.5em 0.2em -1.6em;
+  vertical-align: middle;
+}
+
+/* ── 行内代码 ── */
+.markdown-body code {
+  font-family: var(--md-code-font, var(--mono-font));
+  font-size: 0.9em;
+  background: var(--md-inline-code-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+/* ── 代码块(含缩进代码块与围栏 pre.hljs) ── */
+.markdown-body pre {
+  font-family: var(--md-code-font, var(--mono-font));
+  font-size: 0.9em;
+  line-height: 1.5;
+  background: var(--md-code-bg);
+  color: var(--md-code-fg);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 0 0 16px;
+  overflow: auto;
+}
+.markdown-body pre code {
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ── 引用块 ── */
+.markdown-body blockquote {
+  margin: 0 0 16px;
+  padding: 0 1em;
+  color: var(--md-blockquote-fg);
+  border-left: 4px solid var(--md-blockquote-border);
+}
+.markdown-body blockquote > :first-child { margin-top: 0; }
+.markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+/* ── 表格(block + 横向滚动,不需要额外包装容器) ── */
+.markdown-body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--md-border);
+  padding: 6px 13px;
+}
+.markdown-body th {
+  font-weight: 600;
+  background: var(--md-table-stripe);
+}
+.markdown-body tbody tr:nth-child(2n) { background: var(--md-table-stripe); }
+
+/* ── 分隔线 / 图片 ── */
+.markdown-body hr {
+  border: 0;
+  height: 1px;
+  background: var(--md-hr);
+  margin: 24px 0;
+}
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+/* ── details / summary ── */
+.markdown-body details { margin: 0 0 16px; }
+.markdown-body summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.markdown-body details[open] > summary { margin-bottom: 8px; }
+
+/* ── 脚注(markdown-it-footnote 结构) ── */
+.markdown-body sup.footnote-ref { font-size: 0.85em; }
+.markdown-body hr.footnotes-sep {
+  margin: 32px 0 16px;
+  background: var(--md-hr);
+}
+.markdown-body section.footnotes {
+  font-size: 0.85em;
+  color: var(--md-blockquote-fg);
+}
+.markdown-body .footnotes-list { padding-left: 1.5em; }
+.markdown-body .footnote-item p { margin-bottom: 4px; }
+.markdown-body a.footnote-backref { text-decoration: none; }
+
+/* ── KaTeX ── */
+.markdown-body .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 16px 0;
+}
+.markdown-body p.katex-block { margin: 0 0 16px; }
+.markdown-body .katex-error { color: var(--ui-danger); }
+
+/* ── mermaid ── */
+.markdown-body .mermaid-block {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+.markdown-body .mermaid-block svg {
+  max-width: 100%;
+  height: auto;
+}
+.markdown-body .mermaid-error {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--ui-danger);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--ui-danger);
+  font-size: 0.9em;
+}
+.markdown-body .mermaid-error p { margin: 0 0 8px; }
+.markdown-body .mermaid-error pre {
+  margin: 0;
+  padding: 8px;
+  font-family: var(--md-code-font, var(--mono-font));
+  font-size: 0.85em;
+  color: var(--md-fg);
+  background: var(--md-code-bg);
+  border-radius: 4px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+/* ── PlantUML(白底衬垫,暗色主题下图表仍可读) ── */
+.markdown-body .plantuml-block {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+.markdown-body .plantuml-block img {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── 打印(导出 PDF):全宽、代码换行、避免截断,无固定高度 ── */
+@media print {
+  .markdown-body {
+    max-width: none;
+    padding: 0;
+  }
+  .markdown-body pre {
+    overflow: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .markdown-body table {
+    display: table;
+    width: 100%;
+    overflow: visible;
+  }
+  .markdown-body img,
+  .markdown-body .mermaid-block,
+  .markdown-body .plantuml-block {
+    break-inside: avoid;
+  }
+}

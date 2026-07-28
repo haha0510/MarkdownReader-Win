@@ -1,0 +1,177 @@
+/* viewer.css — 渲染视图附加样式:查找条 / 复制代码按钮 / 锚点偏移 /
+   编辑器容器尺寸 / PDF 导出打印样式。颜色一律走 CONTRACTS §4 变量。 */
+
+/* ── 查找条(浮动卡片,标题栏下方右侧)── */
+#findbar {
+  position: fixed;
+  top: 52px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--ui-popover-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+/* display:flex 会盖掉 UA 的 [hidden] 规则,必须显式恢复 */
+#findbar[hidden] {
+  display: none;
+}
+
+#findbar .find-input {
+  width: 200px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ui-fg);
+  font-family: var(--mono-font);
+  font-size: 12px;
+  line-height: 20px;
+}
+#findbar .find-input::placeholder {
+  color: var(--ui-fg-muted);
+}
+
+#findbar .find-count {
+  min-width: 34px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ui-fg-muted);
+  white-space: nowrap;
+}
+
+#findbar .find-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-fg);
+  font-size: 11px;
+  font-family: var(--ui-font);
+  cursor: pointer;
+}
+#findbar .find-btn:hover {
+  background: var(--ui-hover);
+}
+#findbar .find-btn:active {
+  background: var(--ui-active);
+}
+#findbar .find-btn.active {
+  background: var(--ui-active);
+  color: var(--ui-accent);
+}
+#findbar .find-btn svg {
+  display: block;
+}
+
+/* ── 代码块复制按钮(hover 显示)── */
+.markdown-body pre.hljs {
+  position: relative;
+}
+.copy-code {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ui-panel-bg);
+  color: var(--ui-fg-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.markdown-body pre.hljs:hover .copy-code,
+.copy-code:focus-visible,
+.copy-code.copied {
+  opacity: 1;
+}
+.copy-code:hover {
+  background: var(--ui-hover);
+  color: var(--ui-fg);
+}
+.copy-code.copied {
+  color: var(--ui-accent);
+}
+.copy-code svg {
+  display: block;
+}
+
+/* ── 锚点滚动偏移(大纲跳转 / 页内锚点 / 脚注)── */
+#viewer h1,
+#viewer h2,
+#viewer h3,
+#viewer h4,
+#viewer h5,
+#viewer h6,
+#viewer [id] {
+  scroll-margin-top: 12px;
+}
+
+/* ── 加载失败图片 ── */
+.markdown-body img.broken {
+  outline: 2px dashed var(--ui-danger);
+  outline-offset: 2px;
+  min-width: 32px;
+  min-height: 20px;
+}
+
+/* ── 编辑器容器(CodeMirror 配色在 editor.ts 的 EditorView.theme)── */
+#editor .cm-editor {
+  height: 100%;
+}
+#editor .cm-scroller {
+  overflow: auto;
+}
+
+/* ── PDF 导出(主进程 printToPDF 当前页面):隐藏铬件,正文全宽 ── */
+@media print {
+  #titlebar,
+  #sidebar,
+  #outline,
+  #findbar,
+  #editor,
+  #welcome,
+  #palette-overlay,
+  #settings-overlay,
+  #toast-container,
+  .resize-handle,
+  .copy-code {
+    display: none !important;
+  }
+  #app {
+    display: block;
+    height: auto;
+  }
+  #layout {
+    display: block;
+    overflow: visible;
+  }
+  #content {
+    position: static;
+  }
+  /* 即使处于 raw 模式或 hidden,也强制展示渲染结果 */
+  #viewer-scroll,
+  #viewer-scroll[hidden],
+  html[data-mode='raw'] #viewer-scroll {
+    display: block !important;
+    position: static;
+    overflow: visible;
+  }
+  .markdown-body {
+    max-width: 100%;
+    padding: 0;
+  }
+}

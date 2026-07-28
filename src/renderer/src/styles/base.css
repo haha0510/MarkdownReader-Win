@@ -1,0 +1,209 @@
+/* 基础 — reset / 固定变量 / 控件 / 滚动条 / toast / 打印。
+   颜色一律消费主题 CSS 变量(CONTRACTS §4,由 theme/apply 写入 :root)。 */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ui-radius: 8px;
+  --ui-font: system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --mono-font: 'Cascadia Code', Consolas, 'Microsoft YaHei Mono', 'Courier New', monospace;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font: 13px/1.5 var(--ui-font);
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 正文/编辑器/输入框允许选择文本 */
+.markdown-body,
+#editor,
+input,
+textarea,
+select {
+  user-select: text;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ── 滚动条 ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ui-scrollbar);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-scrollbar-hover);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── 控件基础 ── */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+button {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+input,
+select,
+textarea {
+  background: transparent;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 1px var(--ui-accent);
+}
+button:focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: 1px;
+}
+
+/* 标题栏/工具按钮 */
+.tb-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-fg);
+}
+.tb-btn:hover {
+  background: var(--ui-hover);
+}
+.tb-btn:active {
+  background: var(--ui-active);
+}
+.tb-btn.active {
+  background: var(--ui-active);
+  color: var(--ui-accent);
+}
+.tb-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.muted {
+  color: var(--ui-fg-muted);
+}
+
+/* ── toast(components/toast.ts)── */
+#toast-container {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  max-width: 380px;
+  padding: 8px 14px;
+  font-size: 12px;
+  background: var(--ui-popover-bg);
+  color: var(--ui-fg);
+  border: 1px solid var(--ui-border);
+  border-left: 3px solid var(--ui-fg);
+  border-radius: var(--ui-radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.toast.show {
+  opacity: 1;
+  transform: none;
+}
+.toast-success {
+  border-left-color: var(--ui-accent);
+}
+.toast-error {
+  border-left-color: var(--ui-danger);
+}
+
+/* ── 打印 / 导出 PDF:只保留正文 ── */
+@media print {
+  #titlebar,
+  #sidebar,
+  #outline,
+  .resize-handle,
+  #findbar,
+  #palette-overlay,
+  #settings-overlay,
+  #toast-container,
+  #welcome {
+    display: none !important;
+  }
+  #app {
+    display: block;
+    height: auto;
+  }
+  #layout {
+    display: block;
+    overflow: visible;
+  }
+  #content {
+    width: 100%;
+  }
+  #viewer-scroll {
+    position: static;
+    overflow: visible;
+    height: auto;
+  }
+  body {
+    overflow: visible;
+  }
+  .markdown-body {
+    max-width: 100%;
+    padding: 0;
+  }
+}

@@ -1,0 +1,237 @@
+/* 布局 — 应用骨架:标题栏 / 侧栏 / 内容 / 大纲 / 分隔条 / 欢迎页。 */
+
+#app {
+  display: grid;
+  grid-template-rows: 40px 1fr;
+  height: 100vh;
+}
+
+/* ── 标题栏(整条可拖动窗口,按钮 no-drag)── */
+#titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 8px;
+  background: var(--ui-titlebar-bg);
+  border-bottom: 1px solid var(--ui-border);
+  -webkit-app-region: drag;
+}
+#titlebar button,
+#titlebar input {
+  -webkit-app-region: no-drag;
+}
+#titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+#titlebar-title {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 40vw;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}
+#doc-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#doc-dirty {
+  color: var(--ui-accent);
+  margin-left: 6px;
+  font-size: 10px;
+  line-height: 1;
+}
+#titlebar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* 系统窗口控制按钮(titleBarOverlay)保留区 + 固定 8px 间隙 */
+#overlay-spacer {
+  width: calc(100vw - env(titlebar-area-width, 100vw));
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+/* ── 主区 ── */
+#layout {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#sidebar {
+  width: var(--sidebar-width, 240px);
+  flex-shrink: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ui-sidebar-bg);
+  border-right: 1px solid var(--ui-border);
+}
+#filetree {
+  flex: 1;
+  overflow-y: auto;
+  outline: none;
+}
+
+#outline {
+  width: var(--outline-width, 220px);
+  flex-shrink: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ui-sidebar-bg);
+  border-left: 1px solid var(--ui-border);
+}
+#outline-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* 面板折叠(app.ts 维护 html[data-sidebar]/[data-outline]) */
+html[data-sidebar='false'] #sidebar,
+html[data-sidebar='false'] #resize-left {
+  display: none;
+}
+html[data-outline='false'] #outline,
+html[data-outline='false'] #resize-right {
+  display: none;
+}
+
+/* 分隔条 */
+.resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+  z-index: 10;
+}
+.resize-handle:hover,
+.resize-handle.dragging {
+  background: color-mix(in srgb, var(--ui-accent) 40%, transparent);
+}
+body.resizing {
+  cursor: col-resize;
+}
+body.resizing #viewer-scroll,
+body.resizing #editor {
+  pointer-events: none; /* 拖动时避免内容区吞掉指针 */
+}
+
+/* ── 内容区 ── */
+#content {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  background: var(--md-bg);
+}
+#viewer-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+}
+#editor {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+/* 模式切换(app.ts 维护 html[data-mode];hidden 属性双保险) */
+html[data-mode='raw'] #viewer-scroll {
+  display: none;
+}
+html[data-mode='rendered'] #editor {
+  display: none;
+}
+
+/* ── 欢迎页 ── */
+#welcome {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--md-bg);
+  color: var(--md-fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.welcome-icon {
+  color: var(--ui-fg-muted);
+}
+.welcome-icon svg {
+  width: 48px;
+  height: 48px;
+}
+.welcome-title {
+  font-size: 22px;
+  font-weight: 600;
+}
+.welcome-hint {
+  font-size: 12px;
+  color: var(--ui-fg-muted);
+}
+.welcome-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.welcome-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.welcome-btn:hover {
+  background: var(--ui-hover);
+}
+.welcome-btn-primary {
+  background: var(--ui-accent);
+  color: var(--ui-accent-fg);
+  border-color: transparent;
+}
+.welcome-btn-primary:hover {
+  background: var(--ui-accent);
+  opacity: 0.9;
+}
+.welcome-recent {
+  margin-top: 20px;
+  width: 340px;
+  max-width: 70%;
+}
+.welcome-recent-title {
+  font-size: 11px;
+  color: var(--ui-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.welcome-recent-item {
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.welcome-recent-item:hover {
+  background: var(--ui-hover);
+}
+.welcome-recent-path {
+  margin-left: 8px;
+  font-size: 11px;
+}

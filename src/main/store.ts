@@ -1,0 +1,77 @@
+// settings.json / session.json 持久化 — 原子写入,session 去抖 300ms
+import { app } from 'electron'
+import fs from 'fs'
+import path from 'path'
+import type { SessionState, Settings } from '@shared/types'
+import { DEFAULT_SESSION, DEFAULT_SETTINGS } from '@shared/types'
+
+let settings: Settings | null = null
+let sessionState: SessionState | null = null
+let sessionTimer: NodeJS.Timeout | null = null
+
+function fileOf(name: string): string {
+  return path.join(app.getPath('userData'), name)
+}
+
+// 读取 JSON,失败/损坏时回默认值;浅合并保证新增字段有默认
+function loadJson<T extends object>(name: string, defaults: T): T {
+  try {
+    const raw = fs.readFileSync(fileOf(name), 'utf8')
+    const parsed: unknown = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { ...defaults, ...(parsed as Partial<T>) }
+    }
+  } catch {
+    // 首次运行或文件损坏 → 默认值
+  }
+  return { ...defaults }
+}
+
+// 原子写:先写 .tmp 再 rename(Windows 上 rename 覆盖目标)
+function writeJsonAtomic(name: string, data: unknown): void {
+  try {
+    const file = fileOf(name)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    const tmp = file + '.tmp'
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8')
+    fs.renameSync(tmp, file)
+  } catch (e) {
+    console.error('[store] write failed:', name, e)
+  }
+}
+
+export function getSettings(): Settings {
+  if (!settings) settings = loadJson('settings.json', DEFAULT_SETTINGS)
+  return settings
+}
+
+// 浅合并 patch 并立即持久化(设置修改低频)
+export function setSettings(patch: Partial<Settings>): Settings {
+  settings = { ...getSettings(), ...patch }
+  writeJsonAtomic('settings.json', settings)
+  return settings
+}
+
+export function getSession(): SessionState {
+  if (!sessionState) sessionState = loadJson('session.json', DEFAULT_SESSION)
+  return sessionState
+}
+
+// 浅合并 patch,写盘去抖 300ms(滚动位置等高频更新)
+export function setSession(patch: Partial<SessionState>): void {
+  sessionState = { ...getSession(), ...patch }
+  if (sessionTimer) clearTimeout(sessionTimer)
+  sessionTimer = setTimeout(() => {
+    sessionTimer = null
+    if (sessionState) writeJsonAtomic('session.json', sessionState)
+  }, 300)
+}
+
+// 退出前同步冲刷未写入的 session
+export function flushStore(): void {
+  if (sessionTimer) {
+    clearTimeout(sessionTimer)
+    sessionTimer = null
+    if (sessionState) writeJsonAtomic('session.json', sessionState)
+  }
+}

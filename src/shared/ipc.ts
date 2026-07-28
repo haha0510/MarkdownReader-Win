@@ -116,6 +116,8 @@ export interface RendererApi {
   getLocale(): Promise<string>
   getInfo(): Promise<{ version: string; platform: string }>
   allowRoot(dir: string): Promise<void>
+  /** 拖拽的 File 对象 → 磁盘绝对路径(webUtils,同步) */
+  pathForFile(file: File): string
   /** 渲染器初始化完毕(send,不等待);主进程收到后才 flush 排队的 EvOpenPath */
   ready(): void
 

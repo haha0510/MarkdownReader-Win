@@ -1,0 +1,138 @@
+/* highlight.js 11 类名 → 主题 --hl-* 变量映射(由 theme/apply.ts 引入并写入变量)。
+   仅配色与字重/斜体;代码块布局(padding/overflow 等)归 markdown.css。 */
+
+.hljs {
+  color: var(--md-code-fg);
+  background: var(--md-code-bg);
+}
+
+/* 注释 */
+.hljs-comment,
+.hljs-quote,
+.hljs-code,
+.hljs-formula {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+/* 关键字(subst/doctag/语言级变量 this 等同色) */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst,
+.hljs-doctag,
+.hljs-template-tag,
+.hljs-variable.language_ {
+  color: var(--hl-keyword);
+  font-weight: 600;
+}
+
+/* 字符串/正则/转义字符 */
+.hljs-string,
+.hljs-regexp,
+.hljs-char.escape_ {
+  color: var(--hl-string);
+}
+
+/* diff 新增行 */
+.hljs-addition {
+  color: var(--hl-string);
+  background: var(--hl-addition-bg);
+}
+
+/* 数字/符号 */
+.hljs-number,
+.hljs-symbol {
+  color: var(--hl-number);
+}
+
+/* 字面量(true/false/null) */
+.hljs-literal {
+  color: var(--hl-literal);
+  font-weight: 600;
+}
+
+/* 函数名/标题 */
+.hljs-title,
+.hljs-title.function_,
+.hljs-title.function_.invoke__ {
+  color: var(--hl-function);
+}
+
+/* 类名/类型 */
+.hljs-title.class_,
+.hljs-title.class_.inherited__,
+.hljs-type,
+.hljs-class {
+  color: var(--hl-type);
+}
+
+/* 属性/变量 */
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-property {
+  color: var(--hl-attr);
+}
+
+/* 标签/CSS 选择器 */
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--hl-tag);
+}
+
+/* 内建 */
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--hl-builtin);
+}
+
+/* 元信息(shebang/预处理指令/装饰器);内部 keyword/string 一并压为 meta 色 */
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-meta .hljs-string {
+  color: var(--hl-meta);
+  font-weight: 400;
+}
+
+/* diff 删除行 */
+.hljs-deletion {
+  color: var(--ui-danger);
+  background: var(--hl-deletion-bg);
+}
+
+/* markdown 章节标题 */
+.hljs-section {
+  color: var(--hl-title);
+  font-weight: 600;
+}
+
+/* markdown 列表符 */
+.hljs-bullet {
+  color: var(--hl-attr);
+}
+
+/* 链接 */
+.hljs-link {
+  color: var(--md-link);
+  text-decoration: underline;
+}
+
+/* 运算符/标点/参数回落正文色 */
+.hljs-operator,
+.hljs-punctuation,
+.hljs-params {
+  color: var(--md-code-fg);
+}
+
+/* 强调 */
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}

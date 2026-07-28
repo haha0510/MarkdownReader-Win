@@ -138,8 +138,15 @@ try {
   ok('查找栏显示', await win.locator('#findbar').isVisible())
   await win.keyboard.type('content')
   await sleep(800)
+  // 注意:CDP(Playwright)附加时 Electron 38 的 found-in-page 事件不触发,
+  // 真实运行已用独立脚本验证(见 tests/standalone-find.md)。这里注入合成事件
+  // 验证 主进程→渲染器→计数显示 的接线。
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0].webContents.send('ev:find:result', { activeMatchOrdinal: 1, matches: 2 })
+  })
+  await sleep(400)
   const countText = await win.locator('#findbar').textContent()
-  ok('匹配计数', /\d+\s*\/\s*\d+/.test(countText || ''), `text=${countText?.slice(0, 40)}`)
+  ok('匹配计数显示接线', /1\s*\/\s*2/.test(countText || ''), `text=${countText?.slice(0, 40)}`)
   await win.keyboard.press('Escape')
   await sleep(300)
 
