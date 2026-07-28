@@ -151,6 +151,17 @@ export function initViewer(): void {
   // ── 滚动:scrollspy(rAF 节流)+ 500ms 防抖写入会话滚动记忆 ──
   let rafPending = false
   let saveTimer: number | undefined
+  /** 大纲点击平滑滚动期间抑制 scrollspy 的截止时间戳(scrollend 或超时解除) */
+  let suppressUntil = 0
+  let suppressTimer: number | undefined
+
+  const releaseSuppress = (): void => {
+    suppressUntil = 0
+    if (suppressTimer !== undefined) {
+      window.clearTimeout(suppressTimer)
+      suppressTimer = undefined
+    }
+  }
 
   const updateActiveHeading = (): void => {
     const headings = viewer.querySelectorAll<HTMLElement>(
@@ -160,6 +171,11 @@ export function initViewer(): void {
     for (const h of headings) {
       if (h.getBoundingClientRect().top <= 90) active = h.id
     }
+    // 已滚动到底:激活最后一个标题(否则短末节永远无法点亮)
+    if (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 2) {
+      const last = headings[headings.length - 1]
+      if (last) active = last.id
+    }
     store.set({ activeHeadingId: active })
   }
 
@@ -168,7 +184,14 @@ export function initViewer(): void {
     const s = store.get()
     if (!s.currentFile || rendersInFlight > 0 || lastFraction === null) return
     if (scrollEl.clientHeight === 0) return // 隐藏状态下的值不可信
-    const scrollPositions = { ...s.session.scrollPositions, [s.currentFile]: lastFraction }
+    const scrollPositions: Record<string, number> = { ...s.session.scrollPositions }
+    // 先删再插使当前文件位于插入序最末(最新);超过 100 条按插入序淘汰最早的键
+    delete scrollPositions[s.currentFile]
+    scrollPositions[s.currentFile] = lastFraction
+    const keys = Object.keys(scrollPositions)
+    if (keys.length > 100) {
+      for (const k of keys.slice(0, keys.length - 100)) delete scrollPositions[k]
+    }
     store.set({ session: { ...s.session, scrollPositions } })
     void window.api.setSession({ scrollPositions })
   }
@@ -182,7 +205,8 @@ export function initViewer(): void {
         rafPending = false
         const max = scrollEl.scrollHeight - scrollEl.clientHeight
         if (max > 0) lastFraction = Math.min(1, Math.max(0, scrollEl.scrollTop / max))
-        updateActiveHeading()
+        // 大纲跳转的平滑滚动期间不做 scrollspy(避免把 activeHeadingId 打回中途标题)
+        if (Date.now() >= suppressUntil) updateActiveHeading()
         if (saveTimer !== undefined) window.clearTimeout(saveTimer)
         saveTimer = window.setTimeout(saveScrollFraction, 500)
       })
@@ -195,7 +219,14 @@ export function initViewer(): void {
     const id = typeof payload === 'string' ? payload : ''
     if (!id) return
     const el = viewer.querySelector<HTMLElement>(`#${CSS.escape(id)}`)
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (!el) return
+    // 立即激活目标标题,平滑滚动期间抑制 scrollspy;scrollend 解除,兜底 1000ms 超时
+    store.set({ activeHeadingId: id })
+    suppressUntil = Date.now() + 1000
+    scrollEl.addEventListener('scrollend', releaseSuppress, { once: true })
+    if (suppressTimer !== undefined) window.clearTimeout(suppressTimer)
+    suppressTimer = window.setTimeout(releaseSuppress, 1000)
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   })
 
   // ── 点击委托:复制按钮 / 本地 md 链接 / 页内锚点 / 外链 ──

@@ -1,5 +1,5 @@
 // 主进程入口 — 窗口/单实例/argv 打开路径/系统主题/生命周期
-import { app, BrowserWindow, ipcMain, nativeTheme, protocol, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, screen, shell } from 'electron'
 import { existsSync, statSync } from 'fs'
 import path from 'path'
 import { IPC } from '@shared/ipc'
@@ -24,6 +24,9 @@ if (process.env.MDR_USER_DATA) {
 let mainWindow: BrowserWindow | null = null
 let rendererReady = false
 const pendingOpenPaths: string[] = []
+// 渲染器脏状态镜像(WinSetDirty);关闭拦截据此弹原生确认框
+let rendererDirty = false
+let forceClose = false
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
 
@@ -108,7 +111,7 @@ function createWindow(): void {
   })
 
   // 关闭时把窗口位置写入 session(will-quit 时 flush)
-  win.on('close', () => {
+  win.on('close', (e) => {
     try {
       const nb = win.getNormalBounds()
       setSession({
@@ -116,6 +119,29 @@ function createWindow(): void {
       })
     } catch {
       // 窗口已销毁等边界情况忽略
+    }
+    // 脏文件关闭确认:beforeunload 里 confirm 被 Chromium 屏蔽,只能在主进程拦截
+    if (rendererDirty && !forceClose) {
+      e.preventDefault()
+      const zh = app.getLocale().toLowerCase().startsWith('zh')
+      void dialog
+        .showMessageBox(win, {
+          type: 'warning',
+          buttons: zh ? ['放弃更改并关闭', '取消'] : ['Discard Changes and Close', 'Cancel'],
+          defaultId: 1,
+          cancelId: 1,
+          noLink: true,
+          message: zh ? '有未保存的更改' : 'You have unsaved changes',
+          detail: zh
+            ? '关闭窗口将丢失未保存的修改。可先按 Ctrl+S 保存。'
+            : 'Closing now will lose unsaved edits. Press Ctrl+S to save first.'
+        })
+        .then(({ response }) => {
+          if (response === 0 && !win.isDestroyed()) {
+            forceClose = true
+            win.close()
+          }
+        })
     }
   })
   win.on('closed', () => {
@@ -165,6 +191,11 @@ function onReady(): void {
         mainWindow.webContents.send(IPC.EvOpenPath, p)
       }
     }
+  })
+
+  // 脏状态镜像(关闭拦截用)
+  ipcMain.handle(IPC.WinSetDirty, (_e, d: boolean) => {
+    rendererDirty = d === true
   })
 
   // 系统明暗切换 → 推送渲染器(theme='auto' 时消费)

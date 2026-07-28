@@ -6,6 +6,8 @@ import { Compartment, EditorState, Prec } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 import { store } from '@/state'
 import { bus } from '@/bus'
 import { t } from '@/i18n'
@@ -77,6 +79,24 @@ const cmTheme = EditorView.theme({
   '.cm-button:active': { backgroundColor: 'var(--ui-active)' }
 })
 
+// ── 语法高亮:覆盖 basicSetup 自带的浅色 defaultHighlightStyle(fallback),
+// 颜色映射到主题 CSS 变量,深浅色主题下均可读且随主题切换实时生效 ──
+const cmHighlight = HighlightStyle.define([
+  { tag: tags.heading, color: 'var(--md-heading)', fontWeight: 'bold' },
+  { tag: tags.strong, fontWeight: 'bold' },
+  { tag: tags.emphasis, fontStyle: 'italic' },
+  { tag: [tags.link, tags.url], color: 'var(--md-link)' },
+  { tag: tags.monospace, color: 'var(--md-code-fg)' },
+  { tag: tags.keyword, color: 'var(--hl-keyword)' },
+  { tag: tags.string, color: 'var(--hl-string)' },
+  { tag: tags.comment, color: 'var(--hl-comment)', fontStyle: 'italic' },
+  { tag: tags.number, color: 'var(--hl-number)' },
+  { tag: [tags.meta, tags.processingInstruction], color: 'var(--ui-fg-muted)' },
+  { tag: [tags.labelName, tags.propertyName], color: 'var(--hl-attr)' },
+  { tag: tags.typeName, color: 'var(--hl-type)' },
+  { tag: tags.function(tags.variableName), color: 'var(--hl-function)' }
+])
+
 /** 程序性 setState 期间抑制 updateListener 写回 store */
 let applyingProgrammatic = false
 /** 保存中标志,避免重复触发导致双写/双 toast */
@@ -88,6 +108,7 @@ function freshState(doc: string): EditorState {
     doc,
     extensions: [
       basicSetup,
+      syntaxHighlighting(cmHighlight),
       markdown({ codeLanguages: languages }),
       wrapCompartment.of(wrapExt(store.get().settings.editorWordWrap)),
       cmTheme,
@@ -117,9 +138,17 @@ async function doSave(): Promise<void> {
   const s = store.get()
   if (!s.currentFile || !s.dirty || saving) return
   saving = true
+  // 写盘期间用户可能继续输入或切换文件:先捕获快照,落盘后按快照校验再更新状态
+  const savedPath = s.currentFile
+  const savedContent = s.content
   try {
-    const r = await window.api.writeFile(s.currentFile, s.content)
-    store.set({ dirty: false, mtimeMs: r.mtimeMs })
+    const r = await window.api.writeFile(savedPath, savedContent)
+    const now = store.get()
+    const patch: { dirty?: boolean; mtimeMs?: number } = {}
+    if (now.currentFile === savedPath) patch.mtimeMs = r.mtimeMs
+    // 内容已被继续编辑则保持 dirty,避免新击键被静默标成已保存
+    if (now.content === savedContent) patch.dirty = false
+    store.set(patch)
     bus.emit('toast', { message: t('win.saved'), kind: 'success' })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

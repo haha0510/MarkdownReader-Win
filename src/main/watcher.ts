@@ -5,6 +5,7 @@ import type { WebContents } from 'electron'
 import { IPC } from '@shared/ipc'
 import { MD_EXTENSIONS } from '@shared/types'
 import { readTree } from './files'
+import { resetAllowedRoots } from './protocol'
 
 let getSender: () => WebContents | null = () => null
 let watcher: FSWatcher | null = null
@@ -49,6 +50,8 @@ export async function setWatchRoot(rootDir: string | null): Promise<void> {
     await w.close().catch(() => {})
   }
   currentRoot = rootDir
+  // mdr:// 授权面跟随监控根收缩(避免整个会话累积历史目录)
+  resetAllowedRoots(rootDir)
   if (!rootDir) return
 
   const rootAbs = path.resolve(rootDir)
@@ -71,7 +74,8 @@ export async function setWatchRoot(rootDir: string | null): Promise<void> {
     if (event === 'change' && MD_EXTENSIONS.includes(path.extname(p).toLowerCase())) {
       send(IPC.EvFileChanged, norm(path.resolve(p)))
     }
-    scheduleTreeRefresh()
+    // 纯内容变化不影响目录结构,不必重建树(避免每次 Ctrl+S 后侧栏重绘)
+    if (event !== 'change') scheduleTreeRefresh()
   })
   watcher.on('error', () => {
     // Windows 上偶发 EPERM,忽略避免主进程崩溃

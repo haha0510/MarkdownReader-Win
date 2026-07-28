@@ -55,6 +55,8 @@ export const IPC = {
   WinSetTitle: 'win:setTitle',
   /** invoke (colors: { color: string; symbolColor: string }) → void(标题栏 overlay 配色) */
   WinSetOverlay: 'win:setOverlay',
+  /** invoke (dirty: boolean) → void(脏状态镜像;主进程据此拦截关闭并弹原生确认框) */
+  WinSetDirty: 'win:setDirty',
   /** invoke () → string(系统 locale,如 zh-CN) */
   AppGetLocale: 'app:getLocale',
   /** invoke () → { version: string; platform: string } */
@@ -113,6 +115,8 @@ export interface RendererApi {
   openExternal(url: string): Promise<void>
   setTitle(title: string): Promise<void>
   setOverlay(colors: { color: string; symbolColor: string }): Promise<void>
+  /** 脏状态镜像到主进程(关闭确认在主进程做,beforeunload 的 confirm 不可用) */
+  setDirty(dirty: boolean): Promise<void>
   getLocale(): Promise<string>
   getInfo(): Promise<{ version: string; platform: string }>
   allowRoot(dir: string): Promise<void>

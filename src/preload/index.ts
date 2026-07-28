@@ -32,6 +32,7 @@ const api: RendererApi = {
   setTitle: (title: string) => ipcRenderer.invoke(IPC.WinSetTitle, title),
   setOverlay: (colors: { color: string; symbolColor: string }) =>
     ipcRenderer.invoke(IPC.WinSetOverlay, colors),
+  setDirty: (dirty: boolean) => ipcRenderer.invoke(IPC.WinSetDirty, dirty),
   getLocale: () => ipcRenderer.invoke(IPC.AppGetLocale),
   getInfo: () => ipcRenderer.invoke(IPC.AppGetInfo),
   allowRoot: (dir: string) => ipcRenderer.invoke(IPC.ProtocolAllowRoot, dir),

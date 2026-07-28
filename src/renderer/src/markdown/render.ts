@@ -46,6 +46,8 @@ function githubSlug(raw: string): string {
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^\p{L}\p{N}_-]+/gu, '')
+  // 避开 markdown-it-footnote 的 id 命名空间(fn1/fnref1),防止页内锚点冲突
+  if (/^fn(?:ref)?\d+$/.test(s)) return `${s}-h`
   return s || 'section'
 }
 
@@ -54,6 +56,8 @@ let mdSingleton: MarkdownIt | null = null
 function getMd(): MarkdownIt {
   if (mdSingleton) return mdSingleton
   const md = new MarkdownIt({ html: true, linkify: true, breaks: false })
+  // 关闭无协议的"模糊"识别:裸词 README.md 会被当作 .md(摩尔多瓦)域名连去外网
+  md.linkify.set({ fuzzyLink: false, fuzzyEmail: false, fuzzyIP: false })
 
   // 围栏代码块渲染:mermaid / plantuml / highlight.js。
   // 必须在 use(katexPlugin) 之前赋值,katex 会包装本规则以接管 ```math。
@@ -194,14 +198,35 @@ function postProcess(html: string, docPath: string | null): string {
     }
   })
 
-  // 2) 图片路径改写
-  root.querySelectorAll('img').forEach((img) => {
-    const src = img.getAttribute('src')
-    if (!src) return
-    const t = src.trim()
-    if (SCHEME_RE.test(t) && !DRIVE_RE.test(t)) return // http(s)/data/mdr/file 等协议不动
+  // 2) 本地媒体路径改写(img/video/audio/source 的 src 与 srcset)
+  const toMdr = (val: string): string | null => {
+    const t = val.trim()
+    if (!t) return null
+    if (SCHEME_RE.test(t) && !DRIVE_RE.test(t)) return null // http(s)/data/mdr/file 等协议不动
     const abs = resolveLocal(tryDecode(t), baseDir)
-    if (abs) img.setAttribute('src', `mdr://local/${encodeURIComponent(abs)}`)
+    return abs ? `mdr://local/${encodeURIComponent(abs)}` : null
+  }
+  root.querySelectorAll('img, video, audio, source').forEach((el) => {
+    const src = el.getAttribute('src')
+    if (src) {
+      const m = toMdr(src)
+      if (m) el.setAttribute('src', m)
+    }
+    const srcset = el.getAttribute('srcset')
+    if (srcset) {
+      // srcset:逗号分隔的 "url [描述符]" 列表,逐项改写
+      const rewritten = srcset
+        .split(',')
+        .map((entry) => {
+          const parts = entry.trim().split(/\s+/)
+          if (parts.length === 0 || !parts[0]) return entry.trim()
+          const m = toMdr(parts[0])
+          if (m) parts[0] = m
+          return parts.join(' ')
+        })
+        .join(', ')
+      el.setAttribute('srcset', rewritten)
+    }
   })
 
   // 3) 链接处理

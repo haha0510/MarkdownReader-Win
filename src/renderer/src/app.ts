@@ -30,7 +30,9 @@ const norm = (p: string): string => p.replace(/\\/g, '/')
 const basename = (p: string): string => p.slice(p.lastIndexOf('/') + 1)
 const dirname = (p: string): string => {
   const i = p.lastIndexOf('/')
-  return i > 0 ? p.slice(0, i) : p
+  const d = i > 0 ? p.slice(0, i) : p
+  // 盘根:'D:' 是"驱动器相对路径"(指向进程 CWD),必须带斜杠
+  return /^[A-Za-z]:$/.test(d) ? `${d}/` : d
 }
 const isMarkdownPath = (p: string): boolean => {
   const low = p.toLowerCase()
@@ -45,11 +47,16 @@ function patchSession(patch: Partial<SessionState>): void {
 
 // ── open-file / open-folder 流程 ──
 
+// 打开请求令牌:慢速读盘落后于新一次打开时,旧结果必须作废(防跨文件内容覆盖)
+let openSeq = 0
+
 async function openFileFlow(path: string): Promise<void> {
   const p = norm(path)
   if (store.get().dirty && !window.confirm(t('win.confirmDiscardChanges'))) return
+  const seq = ++openSeq
   try {
     const fc = await api.readFile(p)
+    if (seq !== openSeq) return // 已有更新的打开请求,丢弃本次结果
     store.set({
       currentFile: p,
       content: fc.content,
@@ -63,6 +70,7 @@ async function openFileFlow(path: string): Promise<void> {
     bus.emit('file-loaded')
     patchSession({ openFile: p })
   } catch {
+    if (seq !== openSeq) return // 过期的失败不得清掉已成功打开的文件
     bus.emit('toast', { message: t('win.loadError'), kind: 'error' })
     store.set({ currentFile: null, content: '', mtimeMs: 0, dirty: false, outline: [], activeHeadingId: null })
     patchSession({ openFile: null })
@@ -84,12 +92,13 @@ async function openFolderFlow(dir: string): Promise<void> {
   }
 }
 
-/** 重读当前文件(外部修改自动刷新 / reload-file 菜单) */
+/** 重读当前文件(reload-file 菜单/确认后的外部修改重载) */
 async function reloadCurrent(notify: boolean): Promise<void> {
   const cf = store.get().currentFile
   if (!cf) return
   try {
     const fc = await api.readFile(cf)
+    if (store.get().currentFile !== cf) return // 期间已切换文件,过期读丢弃
     if (fc.content === store.get().content) {
       // 内容未变(例如自己保存触发的 watcher 事件):仅同步 mtime
       store.set({ mtimeMs: fc.mtimeMs, dirty: false })
@@ -103,16 +112,27 @@ async function reloadCurrent(notify: boolean): Promise<void> {
   }
 }
 
-/** 当前文件被外部修改:未编辑 → 静默重载 + toast;已编辑 → confirm 后重载 */
-function onExternalFileChanged(path: string): void {
+/** 当前文件被外部修改:自己保存的回声(mtime 相同)忽略;未编辑 → 静默重载;已编辑 → confirm */
+async function onExternalFileChanged(path: string): Promise<void> {
   const p = norm(path)
-  const s = store.get()
-  if (p !== s.currentFile) return
-  if (!s.dirty) {
-    void reloadCurrent(true)
-    return
+  if (p !== store.get().currentFile) return
+  try {
+    const fc = await api.readFile(p)
+    const s = store.get()
+    if (s.currentFile !== p) return // 期间已切换文件
+    if (fc.mtimeMs === s.mtimeMs) return // 自己保存触发的 watcher 回声
+    if (fc.content === s.content) {
+      store.set({ mtimeMs: fc.mtimeMs })
+      return
+    }
+    if (s.dirty && !window.confirm(t('fileModifiedExternallyMessage'))) return
+    if (store.get().currentFile !== p) return
+    store.set({ content: fc.content, mtimeMs: fc.mtimeMs, dirty: false })
+    bus.emit('file-loaded')
+    bus.emit('toast', { message: t('win.externalChangeReload'), kind: 'info' })
+  } catch {
+    // 文件可能已被删除/占用;目录树刷新会呈现最终状态,这里不打扰
   }
-  if (window.confirm(t('fileModifiedExternallyMessage'))) void reloadCurrent(true)
 }
 
 // ── 菜单/快捷键动作分发(原生菜单 EvMenuAction 与本地 keydown 双入口,50ms 去重)──
@@ -341,7 +361,7 @@ async function bootstrap(): Promise<void> {
       bus.emit('open-folder', p)
     }
   })
-  api.onFileChanged((p) => onExternalFileChanged(p))
+  api.onFileChanged((p) => void onExternalFileChanged(p))
   api.onTreeChanged((tree) => store.set({ tree }))
   api.onSystemThemeChanged((dark) => store.set({ systemDark: dark }))
 
@@ -349,13 +369,11 @@ async function bootstrap(): Promise<void> {
   if (session.rootDir) bus.emit('open-folder', session.rootDir)
   if (session.openFile) bus.emit('open-file', session.openFile)
 
-  // 关闭前脏数据守卫
-  window.addEventListener('beforeunload', (e) => {
-    if (!store.get().dirty) return
-    if (!window.confirm(t('win.confirmDiscardChanges'))) {
-      e.preventDefault()
-      e.returnValue = false
-    }
+  // 脏状态镜像到主进程:关闭拦截在 main 做(beforeunload 里 confirm 被 Chromium 屏蔽,不可用)
+  store.on('dirty', (d) => void api.setDirty(d))
+  // currentFile 变化统一持久化(覆盖 filetree 重命名/删除直接改 store 的路径)
+  store.on('currentFile', (cf) => {
+    patchSession({ openFile: cf })
   })
 
   // 拖放打开:.md 文件或目录拖入窗口即打开(经 preload webUtils 取真实路径)

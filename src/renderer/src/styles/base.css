@@ -40,6 +40,12 @@ select {
   user-select: text;
 }
 
+/* 文本选区配色跟随主题 */
+::selection {
+  background: var(--ui-selection);
+  color: var(--ui-fg);
+}
+
 [hidden] {
   display: none !important;
 }
@@ -164,7 +170,7 @@ button:focus-visible {
   transform: none;
 }
 .toast-success {
-  border-left-color: var(--ui-accent);
+  border-left-color: var(--ui-success);
 }
 .toast-error {
   border-left-color: var(--ui-danger);

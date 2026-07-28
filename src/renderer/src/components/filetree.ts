@@ -49,6 +49,17 @@ export function initFiletree(): void {
   const rows = new Map<string, HTMLElement>()
   /** 当前内联编辑的取消函数(同一时刻至多一个) */
   let cancelEdit: (() => void) | null = null
+  /** 内联编辑期间到达的树更新暂存标记(编辑结束后补渲染) */
+  let pendingTree = false
+  /** 上次滚动定位到的选中路径(仅变化时才 scrollIntoView,避免树刷新拉走视口) */
+  let lastSelectedPath: string | null = null
+
+  /** 编辑结束后补渲染暂存的树更新 */
+  function flushPendingTree(): void {
+    if (!pendingTree) return
+    pendingTree = false
+    renderTree()
+  }
 
   function persistExpanded(): void {
     const list = [...expanded]
@@ -121,7 +132,13 @@ export function initFiletree(): void {
   }
 
   function renderTree(): void {
-    cancelEdit?.()
+    // 内联编辑进行中:暂缓重建,避免销毁输入框丢失已输入文字(编辑结束后补渲染)
+    if (cancelEdit) {
+      pendingTree = true
+      return
+    }
+    // 重建 DOM 会把滚动位置归零,先保存后恢复
+    const savedScroll = treeEl.scrollTop
     rows.clear()
     treeEl.textContent = ''
     const st = store.get()
@@ -140,17 +157,21 @@ export function initFiletree(): void {
     treeEl.appendChild(frag)
     syncDirty()
     updateSelection()
+    treeEl.scrollTop = savedScroll
   }
 
   // ── 选择/展开 ──
   function updateSelection(): void {
     const sel = store.get().selectedPath
     treeEl.querySelectorAll('.ft-row.selected').forEach((el) => el.classList.remove('selected'))
+    const changed = sel !== lastSelectedPath
+    lastSelectedPath = sel
     if (!sel) return
     const row = rows.get(sel)
     if (row) {
       row.classList.add('selected')
-      row.scrollIntoView({ block: 'nearest' })
+      // 仅选中路径变化时滚动定位;树刷新重渲染不拉走视口
+      if (changed) row.scrollIntoView({ block: 'nearest' })
     }
   }
 
@@ -261,6 +282,7 @@ export function initFiletree(): void {
       done = true
       row.remove()
       cancelEdit = null
+      flushPendingTree()
     }
     cancelEdit = cleanup
     const commit = async (): Promise<void> => {
@@ -317,6 +339,7 @@ export function initFiletree(): void {
       input.remove()
       nameEl.style.display = ''
       cancelEdit = null
+      flushPendingTree()
     }
     cancelEdit = cleanup
     const commit = async (): Promise<void> => {
@@ -331,7 +354,9 @@ export function initFiletree(): void {
         return
       }
       try {
-        if (await api.exists(parentOf(path) + '/' + newName)) {
+        // 仅大小写不同的改名在 NTFS 上 exists 会命中自身,跳过预检(主进程 sameFile 已放行)
+        const caseOnly = newName.toLowerCase() === cur.toLowerCase()
+        if (!caseOnly && (await api.exists(parentOf(path) + '/' + newName))) {
           toastErr(t('renameNameExists'))
           input.focus()
           return
@@ -521,14 +546,41 @@ export function initFiletree(): void {
     }
   })
 
+  /** 外部删除目录后清理 expanded 中已不存在的路径(与新树目录集合求交集) */
+  function pruneExpanded(tree: FileNode | null): void {
+    if (!tree || expanded.size === 0) return
+    const dirs = new Set<string>()
+    const walk = (nodes: FileNode[] | undefined): void => {
+      if (!nodes) return
+      for (const n of nodes) {
+        if (n.isDir) {
+          dirs.add(n.path)
+          walk(n.children)
+        }
+      }
+    }
+    walk(tree.children)
+    let changed = false
+    for (const p of [...expanded]) {
+      if (!dirs.has(p)) {
+        expanded.delete(p)
+        changed = true
+      }
+    }
+    if (changed) persistExpanded()
+  }
+
   // ── store / bus 订阅 ──
-  store.on('tree', () => {
+  store.on('tree', (tree) => {
+    pruneExpanded(tree)
     renderTree()
     renderHeader()
   })
   store.on('rootDir', (root, prev) => {
     renderHeader()
     if (!root) {
+      cancelEdit?.() // 直接清空 DOM 前先结束内联编辑,避免 cancelEdit 悬挂导致后续渲染永远暂缓
+      pendingTree = false
       rows.clear()
       treeEl.textContent = ''
       return

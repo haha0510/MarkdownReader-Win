@@ -108,6 +108,7 @@ function buildVars(theme: FullTheme): BuiltTheme {
     '--ui-panel-bg': cssHex(bgElevated),
     '--ui-popover-bg': cssHex(bgElevated),
     '--ui-danger': cssHex(danger),
+    '--ui-success': cssHex(success),
     // 滚动条:低透明度 ink(与参考 scroll.css thumb=border / hover=fgMuted 一致)
     '--ui-scrollbar': cssRgba(ink, aBorder),
     '--ui-scrollbar-hover': cssRgba(ink, aFgMuted),

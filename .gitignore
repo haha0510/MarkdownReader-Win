@@ -5,3 +5,4 @@ dist/
 .DS_Store
 tests/.userdata/
 tests/shots/
+tests/.userdata-packaged/

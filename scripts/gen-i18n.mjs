@@ -61,6 +61,34 @@ const winKeys = {
 
 const all = { ...design.keys, ...winKeys }
 
+// ── Windows 术语替换(仅生成层后处理;design/i18n.json 原始数据与 key 一律不动)──
+// 参考项目为 macOS 文案(访达/废纸篓/Finder/Trash),Windows 版全局替换为对应术语。
+// 注:原始简/繁文案中部分条目直接夹带英文 "Finder",一并按语言替换。
+const TERM_MAP = {
+  zhHans: [
+    ['访达', '资源管理器'],
+    ['Finder', '资源管理器'],
+    ['废纸篓', '回收站']
+  ],
+  zhHant: [
+    ['訪達', '檔案總管'],
+    ['Finder', '檔案總管'],
+    ['垃圾桶', '資源回收筒'],
+    ['廢紙簍', '資源回收筒']
+  ],
+  en: [
+    ['Finder', 'File Explorer'],
+    ['Trash', 'Recycle Bin']
+  ]
+}
+
+/** 对单条文案按语言应用全部术语替换 */
+function winTerms(lang, text) {
+  let out = text
+  for (const [from, to] of TERM_MAP[lang]) out = out.replaceAll(from, to)
+  return out
+}
+
 const lines = []
 lines.push('// 本文件由 scripts/gen-i18n.mjs 自动生成 — 勿手改;修改 design/i18n.json 或脚本后重新生成。')
 lines.push('')
@@ -77,9 +105,9 @@ for (const [key, v] of Object.entries(all)) {
     throw new Error(`key "${key}" 缺少语言字段`)
   }
   lines.push(
-    `  ${JSON.stringify(key)}: { zhHans: ${JSON.stringify(v.zhHans)}, zhHant: ${JSON.stringify(
-      v.zhHant
-    )}, en: ${JSON.stringify(v.en)} },`
+    `  ${JSON.stringify(key)}: { zhHans: ${JSON.stringify(winTerms('zhHans', v.zhHans))}, zhHant: ${JSON.stringify(
+      winTerms('zhHant', v.zhHant)
+    )}, en: ${JSON.stringify(winTerms('en', v.en))} },`
   )
 }
 lines.push('} satisfies Record<string, LocaleEntry>')

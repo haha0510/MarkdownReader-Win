@@ -12,6 +12,12 @@ export function allowRoot(dir: string): void {
   if (typeof dir === 'string' && dir.trim()) allowedRoots.add(path.resolve(dir))
 }
 
+/** 切换工作目录时收缩授权面:清空累积的旧根,只保留新根(null 仅清空) */
+export function resetAllowedRoots(dir: string | null): void {
+  allowedRoots.clear()
+  if (dir) allowRoot(dir)
+}
+
 // target 是否位于某个已允许根之内;win32 大小写不敏感,用 path.relative 判断而非 startsWith
 function isAllowed(target: string): boolean {
   const fold = (p: string): string => (process.platform === 'win32' ? p.toLowerCase() : p)
