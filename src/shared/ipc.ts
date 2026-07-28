@@ -61,6 +61,8 @@ export const IPC = {
   AppGetInfo: 'app:getInfo',
   /** invoke (dir: string) → void(允许 mdr:// 读取的根目录,打开文件/目录时调用) */
   ProtocolAllowRoot: 'protocol:allowRoot',
+  /** send-only:渲染器初始化完毕,可接收 EvOpenPath 等推送 */
+  RendererReady: 'renderer:ready',
 
   // ── 主进程 → 渲染器 推送 ──
   /** (tree: FileNode) 监控目录结构变化后的全量新树 */
@@ -114,6 +116,8 @@ export interface RendererApi {
   getLocale(): Promise<string>
   getInfo(): Promise<{ version: string; platform: string }>
   allowRoot(dir: string): Promise<void>
+  /** 渲染器初始化完毕(send,不等待);主进程收到后才 flush 排队的 EvOpenPath */
+  ready(): void
 
   onTreeChanged(cb: (tree: FileNode) => void): void
   onFileChanged(cb: (path: string) => void): void

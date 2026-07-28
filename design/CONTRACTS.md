@@ -38,6 +38,7 @@ CSS 引入方式:每个 agent 的 .css 由自己名下的某个 .ts `import` 引
 5. 恢复会话:若 session.rootDir 存在 → bus.emit('open-folder', rootDir);再若 openFile 存在 → bus.emit('open-file', openFile)。
 6. 注册 `api.onMenuAction` 分发(转成 bus 事件或直接调 store)、`api.onOpenPath`、`api.onFileChanged`、`api.onTreeChanged`、`api.onSystemThemeChanged`。
 7. 空态时显示 welcome(`store.currentFile == null` ⇔ #welcome 可见,#viewer-scroll/#editor 隐藏)。
+8. 一切就绪后调用 `api.ready()` — 主进程此后才会推送 EvOpenPath(文件关联/命令行启动参数)。
 
 **open-file 流程(C 在 app.ts 实现,D/E 消费结果):**
 `bus('open-file', path)` → 若 dirty 先 confirm(用 t() 文案 + window.confirm)→ `api.readFile` → `store.set({currentFile, content, mtimeMs, dirty:false, outline:[]})` → `api.allowRoot(其目录)` → `api.setTitle` → bus.emit('file-loaded') → session 持久化(openFile、recentRoots)。viewer/editor 监听 `file-loaded` 自行刷新;单文件打开(无 rootDir)时 sidebar 显示该文件所在目录?否——保持 tree 为空,welcome 隐藏。
@@ -74,8 +75,8 @@ F 同时负责:`color-scheme` 属性、`<html>` 上 `data-dark="true|false"`、�
 
 ## 6. i18n(C 提供,全员消费)
 
-`import { t } from '@/i18n'` — `t(key: string, ...args: (string|number)[]): string`,占位符 `{0} {1}`。
-`i18n/strings.ts` 由 C 从 `design/i18n.json` 生成(保留原 key;原文如用 %@ 占位,转成 {n})。缺 key 时返回 key 本身并 console.warn。语言解析:settings.language === 'auto' 时按 api.getLocale():zh-CN/zh-SG→zh-Hans,zh-TW/zh-HK/zh-MO→zh-Hant,其他→en。**新增 UI 若参考项目没有对应 key,在 strings.ts 里补 `win.*` 前缀的新 key(三语都要给)。**
+`import { t } from '@/i18n'` — `t(key: string, params?: Record<string, string | number>): string`,占位符为具名 `{name}`(与参考项目一致,如 `{version}` `{ext}`),按 params 替换。
+`i18n/strings.ts` 由 C 从 `design/i18n.json` 生成(key 与文案逐字保留)。缺 key 时返回 key 本身并 console.warn。语言解析:settings.language === 'auto' 时按 api.getLocale():zh-CN/zh-SG→zh-Hans,zh-TW/zh-HK/zh-MO→zh-Hant,其他→en。**新增 UI 若参考项目没有对应 key,在 strings.ts 里补 `win.*` 前缀的新 key(三语都要给)。**
 
 ## 7. 快捷键(C 的 keyboard.ts 统一处理 + 主进程菜单加速键双保险)
 

@@ -1,0 +1,34 @@
+appId: com.markdownreader.win
+productName: Markdown Reader
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - "!**/*.map"
+asar: true
+icon: build/icon.ico
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  fileAssociations:
+    - ext: md
+      name: Markdown Document
+      description: Markdown 文档
+      icon: build/icon.ico
+    - ext: markdown
+      name: Markdown Document
+      icon: build/icon.ico
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: Markdown Reader
+  artifactName: MarkdownReader-Setup-${version}.${ext}
+portable:
+  artifactName: MarkdownReader-Portable-${version}.${ext}
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

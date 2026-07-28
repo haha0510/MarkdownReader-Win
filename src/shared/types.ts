@@ -81,8 +81,8 @@ export interface SessionState {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'auto',
-  lightTheme: 'github-light',
-  darkTheme: 'github-dark',
+  lightTheme: 'buddy-light',
+  darkTheme: 'buddy-dark',
   fontSize: 16,
   lineHeight: 1.7,
   contentWidth: 820,
