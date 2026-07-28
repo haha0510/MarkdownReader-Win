@@ -3,3 +3,5 @@ out/
 dist/
 *.log
 .DS_Store
+tests/.userdata/
+tests/shots/
