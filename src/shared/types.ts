@@ -51,6 +51,8 @@ export interface Settings {
   plantumlServer: string
   /** 编辑器自动换行 */
   editorWordWrap: boolean
+  /** 自动保存:编辑停顿后自动写回本地文件 */
+  autoSave: boolean
 }
 
 export interface WindowBounds {
@@ -89,7 +91,8 @@ export const DEFAULT_SETTINGS: Settings = {
   editorFontSize: 14,
   language: 'auto',
   plantumlServer: 'https://www.plantuml.com/plantuml',
-  editorWordWrap: true
+  editorWordWrap: true,
+  autoSave: true
 }
 
 export const DEFAULT_SESSION: SessionState = {

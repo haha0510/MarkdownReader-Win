@@ -131,17 +131,46 @@
 
 /* ── 大纲面板 ── */
 #outline-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   height: 40px;
-  line-height: 40px;
   flex: none;
-  padding: 0 12px;
+  padding: 0 8px 0 12px;
   font-size: 12px;
   font-weight: 600;
   color: var(--ui-fg-muted);
   overflow: hidden;
+  user-select: none;
+}
+.ol-htitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  user-select: none;
+}
+/* 头部图标小按钮:全部折叠/全部展开(样式对齐 .sb-refresh/.tb-btn) */
+.ol-tool {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ui-fg-muted);
+  cursor: pointer;
+}
+.ol-tool:hover {
+  background: var(--ui-hover);
+  color: var(--ui-fg);
+}
+.ol-tool svg {
+  display: block;
 }
 #outline-list {
   flex: 1 1 auto;
@@ -150,18 +179,51 @@
   user-select: none;
 }
 .ol-item {
-  display: block;
+  display: flex;
+  align-items: center;
   height: 26px;
   line-height: 26px;
-  padding-right: 8px; /* padding-left 由 JS 按层级内联设置 */
+  padding-right: 8px; /* padding-left 由 JS 按自身层级内联设置(子容器不叠加缩进) */
   font-size: 12.5px;
   color: var(--ui-fg-muted);
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   border-left: 2px solid transparent;
   border-radius: 6px;
   cursor: pointer;
+}
+/* 行文本:承接原行的 ellipsis 行为 */
+.ol-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 折叠箭头;无子节点行用等宽占位保证对齐 */
+.ol-twist,
+.ol-twist-pad {
+  flex: none;
+  width: 14px;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ol-twist {
+  color: var(--ui-fg-muted);
+}
+.ol-twist:hover {
+  color: var(--ui-fg);
+}
+.ol-twist svg {
+  transition: transform 0.15s ease;
+}
+.ol-item.collapsed .ol-twist svg {
+  transform: rotate(-90deg);
+}
+/* 折叠的子分支整体隐藏 */
+.ol-children.collapsed {
+  display: none;
 }
 .ol-item[data-level='1'] {
   font-size: 13px;

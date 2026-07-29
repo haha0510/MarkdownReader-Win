@@ -184,6 +184,13 @@ export function initSettingsUI(): void {
     wrap.addEventListener('change', () => apply({ editorWordWrap: wrap.checked }))
     body.appendChild(row(tf('win.editorWordWrap', '自动换行', '自動換行', 'Word wrap'), wrap))
 
+    // 自动保存(编辑停顿后写回本地文件)
+    const autoSave = document.createElement('input')
+    autoSave.type = 'checkbox'
+    autoSave.checked = s.autoSave
+    autoSave.addEventListener('change', () => apply({ autoSave: autoSave.checked }))
+    body.appendChild(row(t('win.autoSave'), autoSave, t('win.autoSaveHint')))
+
     // ── 通用 ──
     body.appendChild(section(t('settingsTabGeneral')))
 

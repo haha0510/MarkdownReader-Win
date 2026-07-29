@@ -63,7 +63,7 @@ CSS 引入方式:每个 agent 的 .css 由自己名下的某个 .ts `import` 引
 ## 4. CSS 变量目录(F 负责在 `:root` 上设置;所有人只消费)
 
 UI 铬:`--ui-bg --ui-fg --ui-fg-muted --ui-accent --ui-accent-fg --ui-border --ui-hover --ui-active --ui-selection --ui-titlebar-bg --ui-sidebar-bg --ui-panel-bg --ui-popover-bg --ui-danger --ui-success --ui-scrollbar --ui-scrollbar-hover`
-正文:`--md-bg --md-fg --md-heading --md-link --md-border --md-code-bg --md-code-fg --md-inline-code-bg --md-blockquote-fg --md-blockquote-border --md-table-stripe --md-hr --md-mark-bg`
+正文:`--md-bg --md-fg --md-heading --md-link --md-border --md-code-bg --md-code-fg --md-inline-code-bg --md-blockquote-fg --md-blockquote-border --md-table-stripe --md-hr --md-mark-bg --md-heading-border --md-inline-code-fg --md-table-head-bg`
 代码高亮(hljs 类 → 变量映射在 F 的 `styles/hljs.css`):`--hl-comment --hl-keyword --hl-string --hl-number --hl-function --hl-title --hl-attr --hl-tag --hl-literal --hl-builtin --hl-type --hl-meta --hl-addition-bg --hl-deletion-bg`
 布局/排版(非主题,D/C 按 store 维护):`--md-font-size --md-line-height --md-max-width --editor-font-size --sidebar-width --outline-width`
 其余固定值:`--ui-radius: 8px`、`--ui-font: system-ui, "Segoe UI", "Microsoft YaHei", sans-serif`、`--mono-font: "Cascadia Code", Consolas, "Courier New", monospace`(C 在 base.css 定义)。

@@ -1,4 +1,4 @@
-// 原文编辑模式 — CodeMirror 6:每文件独立撤销栈、Mod-S 保存、
+// 原文编辑模式 — CodeMirror 6:每文件独立撤销栈、Mod-S 保存、编辑停顿自动保存、
 // 主题全部走 CSS 变量(主题切换时颜色自动跟随,无需重配置)。
 import { basicSetup } from 'codemirror'
 import { EditorView, keymap } from '@codemirror/view'
@@ -102,6 +102,30 @@ let applyingProgrammatic = false
 /** 保存中标志,避免重复触发导致双写/双 toast */
 let saving = false
 
+// ── 自动保存:编辑停顿 800ms 后静默写盘(settings.autoSave 控制)──
+const AUTO_SAVE_DELAY = 800
+let autoSaveTimer: number | null = null
+
+function clearAutoSaveTimer(): void {
+  if (autoSaveTimer !== null) {
+    window.clearTimeout(autoSaveTimer)
+    autoSaveTimer = null
+  }
+}
+
+function scheduleAutoSave(): void {
+  clearAutoSaveTimer()
+  autoSaveTimer = window.setTimeout(() => {
+    autoSaveTimer = null
+    if (saving) {
+      // 上一次写盘尚未完成:顺延重试,避免这批编辑漏存
+      scheduleAutoSave()
+      return
+    }
+    void doSave(true)
+  }, AUTO_SAVE_DELAY)
+}
+
 /** 每文件全新状态(撤销栈随之重置) */
 function freshState(doc: string): EditorState {
   return EditorState.create({
@@ -128,13 +152,16 @@ function freshState(doc: string): EditorState {
       EditorView.updateListener.of((u) => {
         if (u.docChanged && !applyingProgrammatic) {
           store.set({ content: u.state.doc.toString(), dirty: true })
+          const s = store.get()
+          if (s.settings.autoSave && s.currentFile) scheduleAutoSave()
         }
       })
     ]
   })
 }
 
-async function doSave(): Promise<void> {
+/** silent=true(自动保存)时成功不弹 toast(避免刷屏),失败仍提示 */
+async function doSave(silent = false): Promise<void> {
   const s = store.get()
   if (!s.currentFile || !s.dirty || saving) return
   saving = true
@@ -149,7 +176,7 @@ async function doSave(): Promise<void> {
     // 内容已被继续编辑则保持 dirty,避免新击键被静默标成已保存
     if (now.content === savedContent) patch.dirty = false
     store.set(patch)
-    bus.emit('toast', { message: t('win.saved'), kind: 'success' })
+    if (!silent) bus.emit('toast', { message: t('win.saved'), kind: 'success' })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     bus.emit('toast', { message: `${t('win.saveFailed')}: ${msg}`, kind: 'error' })
@@ -164,19 +191,21 @@ export function initEditor(): void {
 
   view = new EditorView({ state: freshState(store.get().content), parent })
 
-  // 文件载入(含外部修改重载)→ 重建状态(撤销栈重置)
+  // 文件载入(含外部修改重载)→ 重建状态(撤销栈重置);旧文件的待自动保存作废
   bus.on('file-loaded', () => {
+    clearAutoSaveTimer()
     if (!view) return
     applyingProgrammatic = true
     view.setState(freshState(store.get().content))
     applyingProgrammatic = false
   })
 
-  // 自动换行设置变化 → 重配置 compartment
+  // 自动换行设置变化 → 重配置 compartment;关闭自动保存时取消待写盘
   store.on('settings', (s, prev) => {
     if (view && s.editorWordWrap !== prev.editorWordWrap) {
       view.dispatch({ effects: wrapCompartment.reconfigure(wrapExt(s.editorWordWrap)) })
     }
+    if (!s.autoSave && prev.autoSave) clearAutoSaveTimer()
   })
 
   // 切到 raw:重新测量(display:none 期间尺寸为 0)并聚焦
@@ -188,6 +217,8 @@ export function initEditor(): void {
   })
 
   bus.on('save-request', () => {
+    // 手动保存立即写盘,取消待触发的自动保存(避免紧跟一次冗余写)
+    clearAutoSaveTimer()
     void doSave()
   })
 }

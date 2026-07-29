@@ -10,6 +10,14 @@ const design = JSON.parse(readFileSync(resolve(root, 'design/i18n.json'), 'utf8'
 
 // Windows 版新增 key(参考项目没有对应文案的 UI)
 const winKeys = {
+  'win.autoSave': { zhHans: '自动保存', zhHant: '自動儲存', en: 'Auto save' },
+  'win.autoSaveHint': {
+    zhHans: '编辑停顿后自动写入本地文件',
+    zhHant: '編輯停頓後自動寫入本機檔案',
+    en: 'Write changes to disk automatically after you pause typing'
+  },
+  'win.outlineCollapseAll': { zhHans: '全部折叠', zhHant: '全部摺疊', en: 'Collapse all' },
+  'win.outlineExpandAll': { zhHans: '全部展开', zhHant: '全部展開', en: 'Expand all' },
   'win.copyCode': { zhHans: '复制代码', zhHant: '複製程式碼', en: 'Copy code' },
   'win.copied': { zhHans: '已复制', zhHant: '已複製', en: 'Copied' },
   'win.saved': { zhHans: '已保存', zhHant: '已儲存', en: 'Saved' },

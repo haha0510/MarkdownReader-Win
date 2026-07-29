@@ -52,7 +52,15 @@ let openSeq = 0
 
 async function openFileFlow(path: string): Promise<void> {
   const p = norm(path)
-  if (store.get().dirty && !window.confirm(t('win.confirmDiscardChanges'))) return
+  if (store.get().dirty) {
+    if (store.get().settings.autoSave) {
+      // 自动保存开启:不打断用户,先保存再继续切换
+      // (doSave 同步捕获待写路径与内容,之后切换文件写盘仍落在原文件)
+      bus.emit('save-request')
+    } else if (!window.confirm(t('win.confirmDiscardChanges'))) {
+      return
+    }
+  }
   const seq = ++openSeq
   try {
     const fc = await api.readFile(p)
@@ -383,9 +391,12 @@ async function bootstrap(): Promise<void> {
     const f = e.dataTransfer?.files?.[0]
     if (!f) return
     try {
-      const p = api.pathForFile(f)
-      if (!p) return
-      if (/\.(md|markdown|mdown|mkd|mdx)$/i.test(p)) {
+      const raw = api.pathForFile(f)
+      if (!raw) return
+      const p = norm(raw)
+      if (isMarkdownPath(p)) {
+        // 与 onOpenPath 语义一致:尚无根目录时先带出该文件所在文件夹作上下文
+        if (!store.get().rootDir) bus.emit('open-folder', dirname(p))
         bus.emit('open-file', p)
       } else {
         // 无扩展名视为目录(File 对象拿不到 isDirectory;交给 open-folder 流程报错兜底)

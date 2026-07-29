@@ -30,8 +30,8 @@
   margin: 24px 0 16px;
   color: var(--md-heading);
 }
-.markdown-body h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-border); }
-.markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-border); }
+.markdown-body h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-heading-border); }
+.markdown-body h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--md-heading-border); }
 .markdown-body h3 { font-size: 1.25em; }
 .markdown-body h4 { font-size: 1em; }
 .markdown-body h5 { font-size: 0.875em; }
@@ -93,10 +93,11 @@
   vertical-align: middle;
 }
 
-/* ── 行内代码 ── */
+/* ── 行内代码(前景带主题色;代码块内由 pre code 的 inherit 还原) ── */
 .markdown-body code {
   font-family: var(--md-code-font, var(--mono-font));
   font-size: 0.9em;
+  color: var(--md-inline-code-fg);
   background: var(--md-inline-code-bg);
   padding: 0.2em 0.4em;
   border-radius: 4px;
@@ -151,7 +152,7 @@
 }
 .markdown-body th {
   font-weight: 600;
-  background: var(--md-table-stripe);
+  background: var(--md-table-head-bg);
 }
 .markdown-body tbody tr:nth-child(2n) { background: var(--md-table-stripe); }
 
