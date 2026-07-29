@@ -55,6 +55,44 @@
   align-items: center;
   gap: 2px;
 }
+/* 渲染|编辑 分段切换控件(原版同款,替代单图标按钮) */
+.mode-seg {
+  display: flex;
+  align-items: stretch;
+  height: 26px;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-right: 6px;
+  -webkit-app-region: no-drag;
+}
+.mode-seg .seg {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-fg-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.mode-seg .seg svg {
+  width: 13px;
+  height: 13px;
+}
+.mode-seg .seg + .seg {
+  border-left: 1px solid var(--ui-border);
+}
+.mode-seg .seg:hover {
+  background: var(--ui-hover);
+  color: var(--ui-fg);
+}
+.mode-seg .seg.active {
+  background: var(--ui-accent);
+  color: var(--ui-accent-fg);
+}
 /* 系统窗口控制按钮(titleBarOverlay)保留区 + 固定 8px 间隙 */
 #overlay-spacer {
   width: calc(100vw - env(titlebar-area-width, 100vw));

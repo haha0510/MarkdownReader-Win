@@ -41,7 +41,18 @@ export function initTitlebar(): void {
   btnSidebar.addEventListener('click', () => sendAction('toggle-sidebar'))
   btnOutline.innerHTML = ICON_OUTLINE
   btnOutline.addEventListener('click', () => sendAction('toggle-outline'))
-  btnMode.addEventListener('click', () => sendAction('mode-toggle'))
+
+  // 模式切换:分段控件「渲染 | 编辑」(原版同款),比单图标按钮更易发现
+  const segRendered = document.createElement('button')
+  segRendered.className = 'seg'
+  const segRaw = document.createElement('button')
+  segRaw.className = 'seg'
+  segRendered.innerHTML = `${ICON_EYE}<span class="seg-label"></span>`
+  segRaw.innerHTML = `${ICON_CODE}<span class="seg-label"></span>`
+  btnMode.append(segRendered, segRaw)
+  segRendered.addEventListener('click', () => sendAction('mode-rendered'))
+  segRaw.addEventListener('click', () => sendAction('mode-raw'))
+
   btnTheme.innerHTML = ICON_THEME
   btnTheme.addEventListener('click', () => {
     void cycleTheme()
@@ -67,11 +78,17 @@ export function initTitlebar(): void {
   store.on('outlineVisible', syncActive)
   syncActive()
 
-  // 模式按钮:渲染态显示 eye,原文态显示 code
+  // 分段控件:高亮当前模式,标签/提示随语言更新
   const syncMode = (): void => {
     const rendered = store.get().mode === 'rendered'
-    btnMode.innerHTML = rendered ? ICON_EYE : ICON_CODE
-    btnMode.title = rendered ? t('displayModeRendered') : t('displayModeRaw')
+    segRendered.classList.toggle('active', rendered)
+    segRaw.classList.toggle('active', !rendered)
+    const lr = segRendered.querySelector('.seg-label')
+    const lw = segRaw.querySelector('.seg-label')
+    if (lr) lr.textContent = t('displayModeRendered')
+    if (lw) lw.textContent = t('displayModeRaw')
+    segRendered.title = `${t('displayModeRendered')} (Ctrl+Shift+E)`
+    segRaw.title = `${t('displayModeRaw')} (Ctrl+Shift+R)`
   }
   store.on('mode', syncMode)
   store.on('lang', syncTitles)
