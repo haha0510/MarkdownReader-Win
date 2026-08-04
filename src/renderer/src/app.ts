@@ -336,6 +336,28 @@ async function bootstrap(): Promise<void> {
   bus.on('open-folder', (p) => {
     void openFolderFlow(p as string)
   })
+  // 关闭文件夹:清空树与当前文件,回到欢迎页
+  bus.on('close-folder', () => {
+    const s = store.get()
+    if (s.dirty) {
+      if (s.settings.autoSave) bus.emit('save-request')
+      else if (!window.confirm(t('win.confirmDiscardChanges'))) return
+    }
+    ++openSeq // 作废在途的打开请求
+    store.set({
+      rootDir: null,
+      tree: null,
+      currentFile: null,
+      content: '',
+      mtimeMs: 0,
+      dirty: false,
+      outline: [],
+      activeHeadingId: null,
+      selectedPath: null
+    })
+    void api.watch(null)
+    patchSession({ rootDir: null, openFile: null })
+  })
 
   bindStoreToDom()
 

@@ -77,12 +77,31 @@ export function initFiletree(): void {
     name.title = root ?? ''
     headerEl.appendChild(name)
     if (root) {
+      // 打开其他文件夹
+      const btnOpen = document.createElement('button')
+      btnOpen.className = 'sb-refresh'
+      btnOpen.title = t('commandPaletteOpenFolder')
+      btnOpen.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>'
+      btnOpen.addEventListener('click', () => {
+        void api.openDialog('folder').then((p) => {
+          if (p) bus.emit('open-folder', p.replace(/\\/g, '/'))
+        })
+      })
+      // 刷新
       const btn = document.createElement('button')
       btn.className = 'sb-refresh'
       btn.title = t('titleBarReload')
       btn.innerHTML = SVG_REFRESH
       btn.addEventListener('click', () => void refreshTree())
-      headerEl.appendChild(btn)
+      // 关闭文件夹(返回欢迎页)
+      const btnClose = document.createElement('button')
+      btnClose.className = 'sb-refresh'
+      btnClose.title = t('win.closeFolder')
+      btnClose.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      btnClose.addEventListener('click', () => bus.emit('close-folder'))
+      headerEl.append(btnOpen, btn, btnClose)
     }
   }
 

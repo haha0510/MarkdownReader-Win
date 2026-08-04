@@ -199,6 +199,7 @@ export const strings = {
   "windowMenuZoom": { zhHans: "缩放", zhHant: "縮放", en: "Zoom" },
   "windowMenuBringAllToFront": { zhHans: "将全部窗口前置", zhHant: "將全部視窗帶至最前", en: "Bring All to Front" },
   "windowMenu": { zhHans: "窗口", zhHant: "視窗", en: "Window" },
+  "win.closeFolder": { zhHans: "关闭文件夹", zhHant: "關閉資料夾", en: "Close Folder" },
   "win.ctxToggleTheme": { zhHans: "切换深色 / 浅色", zhHant: "切換深色 / 淺色", en: "Toggle Dark / Light" },
   "win.ctxPrint": { zhHans: "打印…", zhHant: "列印…", en: "Print…" },
   "win.autoSave": { zhHans: "自动保存", zhHant: "自動儲存", en: "Auto save" },

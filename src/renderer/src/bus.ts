@@ -5,6 +5,7 @@ type Handler = (payload?: unknown) => void
 export type BusEvent =
   | 'open-file' // (path: string) 请求打开文件
   | 'open-folder' // (path: string) 请求打开目录
+  | 'close-folder' // () 关闭当前目录,回到欢迎页
   | 'file-loaded' // () 文件内容已载入 store
   | 'rendered' // () viewer 完成一次渲染(大纲/滚动可用)
   | 'theme-changed' // () CSS 变量已应用(mermaid 等需重渲染)
