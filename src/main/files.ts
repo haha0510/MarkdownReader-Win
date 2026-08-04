@@ -110,6 +110,38 @@ export async function renameEntry(p: string, newName: string): Promise<{ path: s
   return { path: norm(target) }
 }
 
+// 移动文件/目录到目标目录(目标路径 = destDir + basename(src))
+export async function moveEntry(srcPath: string, destDir: string): Promise<{ path: string }> {
+  const src = path.resolve(srcPath)
+  const dest = path.resolve(destDir)
+  const srcSt = await fsp.stat(src) // src 不存在则此处抛错
+  const destSt = await fsp.stat(dest)
+  if (!destSt.isDirectory()) throw new Error('destination is not a directory: ' + destDir)
+  // 禁止把目录移入自身或其子孙(win32 路径大小写不敏感,统一小写前缀判断)
+  if (srcSt.isDirectory()) {
+    const srcLow = norm(src).toLowerCase()
+    const destLow = norm(dest).toLowerCase()
+    if (destLow === srcLow || destLow.startsWith(srcLow + '/'))
+      throw new Error('cannot move a folder into itself: ' + path.basename(src))
+  }
+  const target = path.join(dest, path.basename(src))
+  // 同位置移动 = 无操作
+  if (norm(target).toLowerCase() === norm(src).toLowerCase()) return { path: norm(src) }
+  if (await exists(target)) throw new Error('target already exists: ' + path.basename(src))
+  try {
+    await fsp.rename(src, target)
+  } catch (err) {
+    // 跨盘(EXDEV)时 rename 失败:复制 + 删除兜底
+    if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+      await fsp.cp(src, target, { recursive: true })
+      await fsp.rm(src, { recursive: true, force: true })
+    } else {
+      throw err
+    }
+  }
+  return { path: norm(target) }
+}
+
 // 删除 → 回收站
 export async function deleteEntry(p: string): Promise<void> {
   await shell.trashItem(path.normalize(path.resolve(p)))

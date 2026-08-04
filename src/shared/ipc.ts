@@ -21,6 +21,8 @@ export const IPC = {
   FsCreate: 'fs:create',
   /** invoke (path: string, newName: string) → { path: string } */
   FsRename: 'fs:rename',
+  /** invoke (srcPath: string, destDir: string) → { path: string }(移动到 destDir/basename(src)) */
+  FsMove: 'fs:move',
   /** invoke (path: string) → void(移入回收站) */
   FsDelete: 'fs:delete',
   /** invoke (path: string) → boolean */
@@ -102,6 +104,8 @@ export interface RendererApi {
   writeFile(path: string, content: string): Promise<{ mtimeMs: number }>
   createEntry(dirPath: string, name: string, kind: 'file' | 'folder'): Promise<{ path: string }>
   renameEntry(path: string, newName: string): Promise<{ path: string }>
+  /** 移动文件/目录到目标目录(目录树内拖拽) */
+  moveEntry(srcPath: string, destDir: string): Promise<{ path: string }>
   deleteEntry(path: string): Promise<void>
   exists(path: string): Promise<boolean>
   watch(roots: string[] | null): Promise<void>

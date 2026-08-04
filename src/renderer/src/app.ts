@@ -455,6 +455,8 @@ async function bootstrap(): Promise<void> {
   window.addEventListener('dragover', (e) => e.preventDefault())
   window.addEventListener('drop', (e) => {
     e.preventDefault()
+    // 树内拖拽移动(filetree 自带 MIME 标记)→ 不当作外部文件打开
+    if (e.dataTransfer?.types.includes('application/x-mdr-path')) return
     const f = e.dataTransfer?.files?.[0]
     if (!f) return
     try {

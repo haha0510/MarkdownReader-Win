@@ -151,6 +151,7 @@ export function initFiletree(): void {
     name.textContent = n.name
     name.title = isRoot ? n.path : n.name
     row.append(twist, icon, name)
+    row.draggable = true // 树内拖拽移动
     rows.set(n.path, row)
     return row
   }
@@ -666,6 +667,90 @@ export function initFiletree(): void {
     }
     if (changed) persistExpanded()
   }
+
+  // ── 树内拖拽移动 ──
+  const DND_MIME = 'application/x-mdr-path'
+  /** 当前拖拽源路径(dragover 里 getData 拿不到数据,靠此变量判定合法目标) */
+  let dragSrc: string | null = null
+  let dragSrcIsDir = false
+  /** 当前高亮的目标行 */
+  let dropRow: HTMLElement | null = null
+
+  function clearDropTarget(): void {
+    dropRow?.classList.remove('drop-target')
+    dropRow = null
+  }
+
+  /** 拖拽目标目录是否合法:排除 自身 / 源的父目录(同目录无意义) / 源目录的子孙 */
+  function validDropDir(destDir: string): boolean {
+    if (!dragSrc) return false
+    if (destDir === dragSrc) return false
+    if (destDir === parentOf(dragSrc)) return false
+    if (dragSrcIsDir && destDir.startsWith(dragSrc + '/')) return false
+    return true
+  }
+
+  treeEl.addEventListener('dragstart', (e) => {
+    const row = (e.target as HTMLElement).closest('.ft-row') as HTMLElement | null
+    const path = row?.dataset.path
+    if (!row || !path || row.classList.contains('ft-edit') || !e.dataTransfer) return
+    dragSrc = path
+    dragSrcIsDir = row.dataset.dir === 'true'
+    e.dataTransfer.setData(DND_MIME, path)
+    e.dataTransfer.effectAllowed = 'move'
+  })
+
+  treeEl.addEventListener('dragover', (e) => {
+    if (!dragSrc || !e.dataTransfer?.types.includes(DND_MIME)) return
+    const row = (e.target as HTMLElement).closest('.ft-row') as HTMLElement | null
+    const dir = row?.dataset.dir === 'true' ? row.dataset.path : undefined
+    if (!row || !dir || !validDropDir(dir)) {
+      clearDropTarget()
+      return
+    }
+    e.preventDefault() // 接受放置
+    e.dataTransfer.dropEffect = 'move'
+    if (dropRow !== row) {
+      clearDropTarget()
+      dropRow = row
+      row.classList.add('drop-target')
+    }
+  })
+
+  treeEl.addEventListener('dragleave', (e) => {
+    // 离开当前高亮行(进入其他行时 dragover 会重设)
+    if (dropRow && e.target instanceof Node && dropRow.contains(e.target)) clearDropTarget()
+  })
+
+  treeEl.addEventListener('dragend', () => {
+    dragSrc = null
+    clearDropTarget()
+  })
+
+  treeEl.addEventListener('drop', (e) => {
+    const src = e.dataTransfer?.getData(DND_MIME)
+    clearDropTarget()
+    if (!src) return
+    e.preventDefault()
+    e.stopPropagation() // 不冒泡到 window 级"外部拖入打开"
+    const row = (e.target as HTMLElement).closest('.ft-row') as HTMLElement | null
+    const destDir = row?.dataset.dir === 'true' ? row.dataset.path : undefined
+    const isDir = rows.get(src)?.dataset.dir === 'true'
+    dragSrc = src
+    dragSrcIsDir = isDir
+    const valid = !!destDir && validDropDir(destDir)
+    dragSrc = null
+    if (!destDir || !valid) return
+    void (async () => {
+      try {
+        const res = await api.moveEntry(src, destDir)
+        // 移动的是当前文件/其祖先目录 → 重映射 currentFile/selectedPath/展开集(树由 watcher 刷新)
+        remapAfterRename(src, res.path, isDir)
+      } catch (err) {
+        toastErr(errMsg(err))
+      }
+    })()
+  })
 
   // ── store / bus 订阅 ──
   store.on('trees', (trees) => {

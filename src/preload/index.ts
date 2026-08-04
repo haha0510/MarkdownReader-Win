@@ -12,6 +12,7 @@ const api: RendererApi = {
   createEntry: (dirPath: string, name: string, kind: 'file' | 'folder') =>
     ipcRenderer.invoke(IPC.FsCreate, dirPath, name, kind),
   renameEntry: (path: string, newName: string) => ipcRenderer.invoke(IPC.FsRename, path, newName),
+  moveEntry: (srcPath: string, destDir: string) => ipcRenderer.invoke(IPC.FsMove, srcPath, destDir),
   deleteEntry: (path: string) => ipcRenderer.invoke(IPC.FsDelete, path),
   exists: (path: string) => ipcRenderer.invoke(IPC.FsExists, path),
   watch: (roots: string[] | null) => ipcRenderer.invoke(IPC.FsWatch, roots),

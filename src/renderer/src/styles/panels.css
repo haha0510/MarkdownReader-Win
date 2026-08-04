@@ -105,6 +105,11 @@
   content: ' *';
   color: var(--ui-accent);
 }
+/* 拖拽移动的放置目标高亮 */
+.ft-row.drop-target {
+  background: var(--ui-selection);
+  box-shadow: inset 0 0 0 1px var(--ui-accent);
+}
 /* 折叠的子层级 */
 .ft-children.collapsed {
   display: none;
