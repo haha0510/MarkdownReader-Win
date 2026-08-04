@@ -80,6 +80,8 @@ export interface SessionState {
   sidebarWidth: number
   outlineWidth: number
   recentRoots: string[]
+  /** 打开的标签页(文件绝对路径,顺序即显示顺序) */
+  openTabs: string[]
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -107,7 +109,8 @@ export const DEFAULT_SESSION: SessionState = {
   outlineVisible: true,
   sidebarWidth: 240,
   outlineWidth: 220,
-  recentRoots: []
+  recentRoots: [],
+  openTabs: []
 }
 
 /** 文件读取结果 */
@@ -149,3 +152,6 @@ export type MenuAction =
   | 'find-prev'
   | 'palette'
   | 'reload-file'
+  | 'close-tab'
+  | 'next-tab'
+  | 'search'

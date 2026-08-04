@@ -1,0 +1,75 @@
+/* 标签栏 — 位于 #content 顶部;内容区通过 html[data-tabs] 规则让出高度 */
+#tabbar {
+  position: relative;
+  z-index: 5;
+  height: 34px;
+  display: flex;
+  align-items: stretch;
+  background: var(--ui-sidebar-bg);
+  border-bottom: 1px solid var(--ui-border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+#tabbar::-webkit-scrollbar {
+  height: 4px;
+}
+#tabbar::-webkit-scrollbar-thumb {
+  background: var(--ui-scrollbar);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  max-width: 180px;
+  font-size: 13px;
+  color: var(--ui-fg-muted);
+  border-right: 1px solid var(--ui-border);
+  cursor: pointer;
+  user-select: none;
+}
+.tab:hover {
+  background: var(--ui-hover);
+}
+.tab.active {
+  background: var(--md-bg);
+  color: var(--ui-fg);
+  /* 顶部 2px 强调色内描边 */
+  box-shadow: inset 0 2px 0 0 var(--ui-accent);
+}
+.tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tab-close {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  visibility: hidden;
+}
+.tab:hover .tab-close,
+.tab.active:hover .tab-close {
+  visibility: visible;
+}
+.tab-close:hover {
+  background: var(--ui-active);
+}
+
+/* 内容区是 #content 内 absolute inset:0(layout.css 不动),有标签时下移让位 */
+html[data-tabs='true'] #viewer-scroll,
+html[data-tabs='true'] #editor,
+html[data-tabs='true'] #welcome {
+  top: 34px;
+}

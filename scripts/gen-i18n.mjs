@@ -10,6 +10,14 @@ const design = JSON.parse(readFileSync(resolve(root, 'design/i18n.json'), 'utf8'
 
 // Windows 版新增 key(参考项目没有对应文案的 UI)
 const winKeys = {
+  'win.searchTitle': { zhHans: '全文搜索', zhHant: '全文搜尋', en: 'Search in Files' },
+  'win.searchPlaceholder': {
+    zhHans: '搜索所有文档内容…',
+    zhHant: '搜尋所有文件內容…',
+    en: 'Search in all documents…'
+  },
+  'win.searchNoResults': { zhHans: '没有匹配结果', zhHant: '沒有符合結果', en: 'No results' },
+  'win.closeTab': { zhHans: '关闭标签页', zhHant: '關閉分頁', en: 'Close Tab' },
   'win.closeFolder': { zhHans: '关闭文件夹', zhHant: '關閉資料夾', en: 'Close Folder' },
   'win.addFolder': { zhHans: '添加文件夹', zhHant: '新增資料夾', en: 'Add Folder' },
   'win.removeFolder': { zhHans: '从侧栏移除', zhHant: '從側欄移除', en: 'Remove from Sidebar' },

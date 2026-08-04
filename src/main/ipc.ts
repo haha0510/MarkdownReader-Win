@@ -70,6 +70,9 @@ export function registerIpc(): void {
   )
   ipcMain.handle(IPC.FsRename, (_e, p: string, newName: string) => files.renameEntry(p, newName))
   ipcMain.handle(IPC.FsMove, (_e, src: string, destDir: string) => files.moveEntry(src, destDir))
+  ipcMain.handle(IPC.FsSearch, (_e, roots: string[], query: string) =>
+    files.searchContent(Array.isArray(roots) ? roots : [], String(query ?? ''))
+  )
   ipcMain.handle(IPC.FsDelete, (_e, p: string) => files.deleteEntry(p))
   ipcMain.handle(IPC.FsExists, (_e, p: string) => files.exists(p))
   ipcMain.handle(IPC.FsWatch, (_e, roots: string[] | null) =>

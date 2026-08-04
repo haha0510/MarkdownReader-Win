@@ -7,6 +7,9 @@ export type BusEvent =
   | 'open-folder' // (path: string) 请求打开(追加)目录
   | 'remove-folder' // (path: string) 从工作区移除单个根目录
   | 'close-folder' // () 关闭全部目录,回到欢迎页
+  | 'show-search' // () 全文搜索浮层
+  | 'close-active-tab' // () 关闭当前标签
+  | 'cycle-tab' // () 切到下一个标签
   | 'file-loaded' // () 文件内容已载入 store
   | 'rendered' // () viewer 完成一次渲染(大纲/滚动可用)
   | 'theme-changed' // () CSS 变量已应用(mermaid 等需重渲染)

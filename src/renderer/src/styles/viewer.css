@@ -132,6 +132,36 @@ html[data-outline='true'] #findbar {
   min-height: 20px;
 }
 
+/* ── 图片灯箱(viewer.ts 懒创建)── */
+.markdown-body img:not(.broken) {
+  cursor: zoom-in;
+  transition: filter 0.15s ease;
+}
+.markdown-body img:not(.broken):hover {
+  filter: brightness(1.03); /* 轻微提亮,暗示可点击放大 */
+}
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.82);
+  cursor: zoom-out;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+#lightbox[hidden] {
+  display: none;
+}
+#lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  transition: transform 0.1s ease-out;
+}
+
 /* ── 编辑器容器(CodeMirror 配色在 editor.ts 的 EditorView.theme)── */
 #editor .cm-editor {
   height: 100%;
@@ -151,6 +181,7 @@ html[data-outline='true'] #findbar {
   #palette-overlay,
   #settings-overlay,
   #toast-container,
+  #lightbox,
   .resize-handle,
   .copy-code {
     display: none !important;

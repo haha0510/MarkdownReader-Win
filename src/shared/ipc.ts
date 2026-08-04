@@ -23,6 +23,8 @@ export const IPC = {
   FsRename: 'fs:rename',
   /** invoke (srcPath: string, destDir: string) → { path: string }(移动到 destDir/basename(src)) */
   FsMove: 'fs:move',
+  /** invoke (roots: string[], query: string) → SearchHit[](全文搜索,上限 200 条) */
+  FsSearch: 'fs:search',
   /** invoke (path: string) → void(移入回收站) */
   FsDelete: 'fs:delete',
   /** invoke (path: string) → boolean */
@@ -96,6 +98,16 @@ export interface FindResult {
   matches: number
 }
 
+/** 全文搜索命中项 */
+export interface SearchHit {
+  /** 文件绝对路径(正斜杠) */
+  path: string
+  /** 0 基行号 */
+  line: number
+  /** 命中行文本(截断至 ~200 字符) */
+  preview: string
+}
+
 /** preload 暴露到 window.api 的接口 */
 export interface RendererApi {
   openDialog(kind: 'file' | 'folder'): Promise<string | null>
@@ -106,6 +118,8 @@ export interface RendererApi {
   renameEntry(path: string, newName: string): Promise<{ path: string }>
   /** 移动文件/目录到目标目录(目录树内拖拽) */
   moveEntry(srcPath: string, destDir: string): Promise<{ path: string }>
+  /** 全文搜索所有根目录下 md 文件内容 */
+  searchContent(roots: string[], query: string): Promise<SearchHit[]>
   deleteEntry(path: string): Promise<void>
   exists(path: string): Promise<boolean>
   watch(roots: string[] | null): Promise<void>

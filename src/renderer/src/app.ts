@@ -19,6 +19,8 @@ import { initSettingsUI } from '@/components/settings'
 import { initViewer } from '@/components/viewer'
 import { initEditor } from '@/components/editor'
 import { initFindbar } from '@/components/findbar'
+import { initTabs } from '@/components/tabs'
+import { initSearch } from '@/components/search'
 import { initKeyboard } from '@/keyboard'
 import { initMermaidModule } from '@/markdown/mermaid'
 
@@ -259,6 +261,15 @@ function dispatchAction(action: MenuAction): void {
     case 'reload-file':
       void reloadCurrent(false)
       break
+    case 'close-tab':
+      bus.emit('close-active-tab')
+      break
+    case 'next-tab':
+      bus.emit('cycle-tab')
+      break
+    case 'search':
+      bus.emit('show-search')
+      break
   }
 }
 
@@ -419,6 +430,8 @@ async function bootstrap(): Promise<void> {
   initViewer()
   initEditor()
   initFindbar()
+  initTabs()
+  initSearch()
   initKeyboard()
   initMermaidModule()
 

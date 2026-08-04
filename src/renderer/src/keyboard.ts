@@ -54,6 +54,12 @@ export function initKeyboard(): void {
         send(e.shiftKey ? 'toggle-outline' : 'toggle-sidebar')
         return
       }
+      // Ctrl+Tab 切换标签
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        send('next-tab')
+        return
+      }
       // 契约 §7 其余组合(与原生菜单加速键一致,经 app.ts 去重)
       const plain: Record<string, MenuAction> = {
         o: 'open-file',
@@ -62,13 +68,15 @@ export function initKeyboard(): void {
         f: 'find',
         g: 'find-next',
         p: 'palette',
+        w: 'close-tab',
         ',': 'settings'
       }
       const shifted: Record<string, MenuAction> = {
         o: 'open-folder',
         e: 'mode-rendered',
         r: 'mode-raw',
-        g: 'find-prev'
+        g: 'find-prev',
+        f: 'search'
       }
       const action = e.shiftKey ? shifted[k] : plain[k]
       if (action) {

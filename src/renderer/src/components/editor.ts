@@ -97,6 +97,58 @@ const cmHighlight = HighlightStyle.define([
   { tag: tags.function(tags.variableName), color: 'var(--hl-function)' }
 ])
 
+/**
+ * 用记号对包裹/去包裹主选区(加粗/斜体 toggle)。
+ * - 有选区:两侧已是同记号则去掉(toggle off),否则包裹;
+ * - 无选区:插入记号对并把光标置于中间。
+ * 多选区只处理主选区,保持实现简单。
+ */
+function wrapSelection(v: EditorView, prefix: string, suffix: string): boolean {
+  const { state } = v
+  const range = state.selection.main
+  const { from, to } = range
+  const text = state.sliceDoc(from, to)
+  if (from === to) {
+    // 无选区:插入记号对,光标置中
+    v.dispatch({
+      changes: { from, insert: prefix + suffix },
+      selection: { anchor: from + prefix.length }
+    })
+    return true
+  }
+  if (text.startsWith(prefix) && text.endsWith(suffix) && text.length >= prefix.length + suffix.length) {
+    // 选区自身已带同记号 → 去掉
+    const inner = text.slice(prefix.length, text.length - suffix.length)
+    v.dispatch({
+      changes: { from, to, insert: inner },
+      selection: { anchor: from, head: from + inner.length }
+    })
+    return true
+  }
+  // 选区外侧紧邻同记号(常见于再次按快捷键)→ 去掉外侧记号
+  const before = state.sliceDoc(Math.max(0, from - prefix.length), from)
+  const after = state.sliceDoc(to, Math.min(state.doc.length, to + suffix.length))
+  if (before === prefix && after === suffix) {
+    v.dispatch({
+      changes: [
+        { from: from - prefix.length, to: from },
+        { from: to, to: to + suffix.length }
+      ],
+      selection: { anchor: from - prefix.length, head: to - prefix.length }
+    })
+    return true
+  }
+  // 普通包裹
+  v.dispatch({
+    changes: [
+      { from, insert: prefix },
+      { from: to, insert: suffix }
+    ],
+    selection: { anchor: from + prefix.length, head: to + prefix.length }
+  })
+  return true
+}
+
 /** 程序性 setState 期间抑制 updateListener 写回 store */
 let applyingProgrammatic = false
 /** 保存中标志,避免重复触发导致双写/双 toast */
@@ -146,7 +198,10 @@ function freshState(doc: string): EditorState {
               bus.emit('save-request')
               return true
             }
-          }
+          },
+          // 加粗 / 斜体:包裹或去包裹主选区(见 wrapSelection)
+          { key: 'Mod-b', preventDefault: true, run: (v) => wrapSelection(v, '**', '**') },
+          { key: 'Mod-i', preventDefault: true, run: (v) => wrapSelection(v, '*', '*') }
         ])
       ),
       EditorView.updateListener.of((u) => {

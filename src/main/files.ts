@@ -4,6 +4,7 @@ import path from 'path'
 import { shell } from 'electron'
 import type { FileContent, FileNode } from '@shared/types'
 import { MD_EXTENSIONS } from '@shared/types'
+import type { SearchHit } from '@shared/ipc'
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
 
@@ -140,6 +141,63 @@ export async function moveEntry(srcPath: string, destDir: string): Promise<{ pat
     }
   }
   return { path: norm(target) }
+}
+
+// 递归收集根目录下全部 md 文件路径(规则与目录树一致:跳过隐藏项与 node_modules)
+async function collectMdFiles(dir: string, out: string[]): Promise<void> {
+  let entries
+  try {
+    entries = await fsp.readdir(dir, { withFileTypes: true })
+  } catch {
+    return // 无权限等错误 → 跳过
+  }
+  for (const ent of entries) {
+    if (skipName(ent.name)) continue
+    const full = path.join(dir, ent.name)
+    if (ent.isDirectory()) await collectMdFiles(full, out)
+    else if (ent.isFile() && isMdFile(ent.name)) out.push(full)
+  }
+}
+
+const SEARCH_MAX_TOTAL = 200 // 总命中上限
+const SEARCH_MAX_PER_FILE = 20 // 单文件命中上限
+const SEARCH_MAX_FILE_SIZE = 2 * 1024 * 1024 // 超过 2MB 的文件跳过
+
+// 全文搜索:大小写不敏感的普通子串匹配,逐文件顺序读取(避免并发读爆)
+export async function searchContent(roots: string[], query: string): Promise<SearchHit[]> {
+  const q = query.toLowerCase()
+  const hits: SearchHit[] = []
+  if (!q) return hits
+  for (const root of roots) {
+    const mdFiles: string[] = []
+    try {
+      const abs = path.resolve(root)
+      const st = await fsp.stat(abs)
+      if (!st.isDirectory()) continue
+      await collectMdFiles(abs, mdFiles)
+    } catch {
+      continue // 根不可读 → 跳过
+    }
+    for (const file of mdFiles) {
+      if (hits.length >= SEARCH_MAX_TOTAL) return hits
+      let content: string
+      try {
+        const st = await fsp.stat(file)
+        if (st.size > SEARCH_MAX_FILE_SIZE) continue
+        content = await fsp.readFile(file, 'utf8')
+      } catch {
+        continue
+      }
+      const lines = content.split(/\r?\n/)
+      let inFile = 0
+      for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].toLowerCase().includes(q)) continue
+        hits.push({ path: norm(file), line: i, preview: lines[i].trim().slice(0, 200) })
+        if (++inFile >= SEARCH_MAX_PER_FILE || hits.length >= SEARCH_MAX_TOTAL) break
+      }
+    }
+  }
+  return hits
 }
 
 // 删除 → 回收站

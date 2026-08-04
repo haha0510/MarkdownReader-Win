@@ -273,6 +273,69 @@ export function initViewer(): void {
     }
   })
 
+  // ── 图片灯箱:点击正文图片放大预览(懒创建一次,append 到 body)──
+  let lightbox: HTMLDivElement | null = null
+  let lightboxImg: HTMLImageElement | null = null
+  /** 当前缩放倍数(滚轮调整,0.2..6) */
+  let lightboxScale = 1
+
+  const closeLightbox = (): void => {
+    if (lightbox && !lightbox.hidden) lightbox.hidden = true
+  }
+
+  const openLightbox = (src: string): void => {
+    if (!lightbox) {
+      // 懒创建:整个会话只建一次,复用 DOM
+      lightbox = document.createElement('div')
+      lightbox.id = 'lightbox'
+      lightbox.tabIndex = -1 // 可聚焦,承接 Esc keydown
+      lightboxImg = document.createElement('img')
+      lightbox.appendChild(lightboxImg)
+      // 点击任意处(含图片本身)关闭
+      lightbox.addEventListener('click', closeLightbox)
+      // 灯箱自身的 Esc(与 bus 'close-overlays' 双保险)
+      lightbox.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeLightbox()
+      })
+      // 滚轮缩放(0.2..6 倍,简单 transform scale)
+      lightbox.addEventListener(
+        'wheel',
+        (e) => {
+          e.preventDefault()
+          const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15
+          lightboxScale = Math.min(6, Math.max(0.2, lightboxScale * factor))
+          if (lightboxImg) lightboxImg.style.transform = `scale(${lightboxScale})`
+        },
+        { passive: false }
+      )
+      document.body.appendChild(lightbox)
+    }
+    lightboxScale = 1
+    if (lightboxImg) {
+      lightboxImg.style.transform = 'scale(1)'
+      lightboxImg.src = src
+    }
+    lightbox.hidden = false
+    lightbox.focus()
+  }
+
+  // Esc 语义:灯箱打开时随其它浮层一并关闭(只做关闭,不与其它浮层互抢)
+  bus.on('close-overlays', closeLightbox)
+
+  // 点击正文图片(非 broken)→ 打开灯箱
+  viewer.addEventListener('click', (e) => {
+    const img = e.target as HTMLElement | null
+    // 链接内图片交给链接点击委托处理,不开灯箱
+    if (
+      img instanceof HTMLImageElement &&
+      !img.classList.contains('broken') &&
+      !img.closest('a') &&
+      img.src
+    ) {
+      openLightbox(img.src)
+    }
+  })
+
   // 图片加载失败 → 标记 broken(error 不冒泡,用捕获)
   viewer.addEventListener(
     'error',
