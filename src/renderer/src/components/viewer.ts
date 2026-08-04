@@ -281,4 +281,29 @@ export function initViewer(): void {
     },
     true
   )
+
+  // 正文右键菜单:切换深/浅主题、导出 PDF、打印(对齐参考项目"右键一键切换/右键导出")
+  scrollEl.addEventListener('contextmenu', (e) => {
+    e.preventDefault()
+    void (async () => {
+      const id = await window.api.popupMenu([
+        { id: 'toggle-theme', label: t('win.ctxToggleTheme') },
+        { type: 'separator' },
+        { id: 'export-pdf', label: t('titleBarExportPDF') },
+        { id: 'print', label: t('win.ctxPrint') }
+      ])
+      if (id === 'toggle-theme') {
+        // 按当前生效明暗取反,写入对应预设(auto 状态也会切到显式主题)
+        const dark = document.documentElement.dataset.dark === 'true'
+        const s = store.get().settings
+        const next = await window.api.setSettings({ theme: dark ? s.lightTheme : s.darkTheme })
+        store.set({ settings: next })
+        bus.emit('toast', { message: t(dark ? 'win.themeLight' : 'win.themeDark'), kind: 'info' })
+      } else if (id === 'export-pdf') {
+        window.dispatchEvent(new CustomEvent('app:menu-action', { detail: 'export-pdf' }))
+      } else if (id === 'print') {
+        void window.api.print()
+      }
+    })()
+  })
 }

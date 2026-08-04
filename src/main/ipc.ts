@@ -91,6 +91,13 @@ export function registerIpc(): void {
     return exportPdf(win, String(suggestedName ?? ''))
   })
 
+  // ── 系统打印(渲染内容;@media print 已隐藏界面元素)──
+  ipcMain.handle(IPC.Print, (e) => {
+    e.sender.print({ printBackground: true }, () => {
+      // 用户取消或完成均无需处理
+    })
+  })
+
   // ── 页内查找 ──
   ipcMain.handle(IPC.FindStart, (e, text: string, opts?: FindOptions) => {
     if (!text) {

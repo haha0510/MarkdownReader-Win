@@ -23,6 +23,7 @@ const api: RendererApi = {
   setSession: (patch: Partial<SessionState>) => ipcRenderer.invoke(IPC.SessionSet, patch),
 
   exportPdf: (suggestedName: string) => ipcRenderer.invoke(IPC.ExportPdf, suggestedName),
+  print: () => ipcRenderer.invoke(IPC.Print),
 
   findStart: (text: string, opts?: FindOptions) => ipcRenderer.invoke(IPC.FindStart, text, opts),
   findStop: (action: 'clearSelection' | 'keepSelection') => ipcRenderer.invoke(IPC.FindStop, action),

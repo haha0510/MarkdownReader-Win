@@ -41,6 +41,8 @@ export const IPC = {
 
   /** invoke (suggestedName: string) → { ok: boolean; path?: string; error?: string } */
   ExportPdf: 'export:pdf',
+  /** invoke () → void(系统打印对话框) */
+  Print: 'app:print',
 
   /** invoke (text, opts) → void;结果经 EvFindResult 推送 */
   FindStart: 'find:start',
@@ -109,6 +111,8 @@ export interface RendererApi {
   getSession(): Promise<SessionState>
   setSession(patch: Partial<SessionState>): Promise<void>
   exportPdf(suggestedName: string): Promise<{ ok: boolean; path?: string; error?: string }>
+  /** 调起系统打印对话框(打印当前渲染内容) */
+  print(): Promise<void>
   findStart(text: string, opts?: FindOptions): Promise<void>
   findStop(action: 'clearSelection' | 'keepSelection'): Promise<void>
   popupMenu(items: PopupItem[]): Promise<string | null>

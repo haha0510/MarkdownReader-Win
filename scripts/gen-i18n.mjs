@@ -10,6 +10,8 @@ const design = JSON.parse(readFileSync(resolve(root, 'design/i18n.json'), 'utf8'
 
 // Windows 版新增 key(参考项目没有对应文案的 UI)
 const winKeys = {
+  'win.ctxToggleTheme': { zhHans: '切换深色 / 浅色', zhHant: '切換深色 / 淺色', en: 'Toggle Dark / Light' },
+  'win.ctxPrint': { zhHans: '打印…', zhHant: '列印…', en: 'Print…' },
   'win.autoSave': { zhHans: '自动保存', zhHant: '自動儲存', en: 'Auto save' },
   'win.autoSaveHint': {
     zhHans: '编辑停顿后自动写入本地文件',
