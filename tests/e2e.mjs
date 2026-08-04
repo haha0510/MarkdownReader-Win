@@ -32,7 +32,7 @@ mkdirSync(SHOTS, { recursive: true })
 writeFileSync(
   join(USER_DATA, 'session.json'),
   JSON.stringify({
-    rootDir: TESTDOCS,
+    rootDirs: [TESTDOCS],
     openFile: DEMO,
     expandedDirs: [],
     scrollPositions: {},

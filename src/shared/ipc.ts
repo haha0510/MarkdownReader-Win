@@ -25,7 +25,7 @@ export const IPC = {
   FsDelete: 'fs:delete',
   /** invoke (path: string) → boolean */
   FsExists: 'fs:exists',
-  /** invoke (rootDir: string | null) → void(null 停止监控) */
+  /** invoke (roots: string[] | null) → void(null/空数组 停止监控;多根同时监控) */
   FsWatch: 'fs:watch',
   /** invoke (path: string) → void(资源管理器中显示) */
   FsReveal: 'fs:reveal',
@@ -69,7 +69,7 @@ export const IPC = {
   RendererReady: 'renderer:ready',
 
   // ── 主进程 → 渲染器 推送 ──
-  /** (tree: FileNode) 监控目录结构变化后的全量新树 */
+  /** (trees: FileNode[]) 监控目录结构变化后的全量新树数组(与 watch 传入的 roots 顺序一致) */
   EvTreeChanged: 'ev:fs:treeChanged',
   /** (path: string) 当前打开文件被外部修改 */
   EvFileChanged: 'ev:fs:fileChanged',
@@ -104,7 +104,7 @@ export interface RendererApi {
   renameEntry(path: string, newName: string): Promise<{ path: string }>
   deleteEntry(path: string): Promise<void>
   exists(path: string): Promise<boolean>
-  watch(rootDir: string | null): Promise<void>
+  watch(roots: string[] | null): Promise<void>
   reveal(path: string): Promise<void>
   getSettings(): Promise<Settings>
   setSettings(patch: Partial<Settings>): Promise<Settings>
@@ -129,7 +129,7 @@ export interface RendererApi {
   /** 渲染器初始化完毕(send,不等待);主进程收到后才 flush 排队的 EvOpenPath */
   ready(): void
 
-  onTreeChanged(cb: (tree: FileNode) => void): void
+  onTreeChanged(cb: (trees: FileNode[]) => void): void
   onFileChanged(cb: (path: string) => void): void
   onOpenPath(cb: (path: string) => void): void
   onMenuAction(cb: (action: MenuAction) => void): void

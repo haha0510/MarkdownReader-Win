@@ -10,7 +10,7 @@ mkdirSync(UD, { recursive: true })
 writeFileSync(
   join(UD, 'session.json'),
   JSON.stringify({
-    rootDir: TD,
+    rootDirs: [TD],
     openFile: TD + '/README.md',
     sidebarVisible: true,
     outlineVisible: true,

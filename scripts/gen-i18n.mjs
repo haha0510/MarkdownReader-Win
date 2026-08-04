@@ -11,6 +11,9 @@ const design = JSON.parse(readFileSync(resolve(root, 'design/i18n.json'), 'utf8'
 // Windows 版新增 key(参考项目没有对应文案的 UI)
 const winKeys = {
   'win.closeFolder': { zhHans: '关闭文件夹', zhHant: '關閉資料夾', en: 'Close Folder' },
+  'win.addFolder': { zhHans: '添加文件夹', zhHant: '新增資料夾', en: 'Add Folder' },
+  'win.removeFolder': { zhHans: '从侧栏移除', zhHant: '從側欄移除', en: 'Remove from Sidebar' },
+  'win.foldersTitle': { zhHans: '{n} 个文件夹', zhHant: '{n} 個資料夾', en: '{n} folders' },
   'win.ctxToggleTheme': { zhHans: '切换深色 / 浅色', zhHant: '切換深色 / 淺色', en: 'Toggle Dark / Light' },
   'win.ctxPrint': { zhHans: '打印…', zhHant: '列印…', en: 'Print…' },
   'win.autoSave': { zhHans: '自动保存', zhHant: '自動儲存', en: 'Auto save' },

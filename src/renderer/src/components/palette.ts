@@ -58,19 +58,23 @@ export function initPalette(): void {
   function collect(): Cand[] {
     if (cands) return cands
     const out: Cand[] = []
-    const root = store.get().rootDir
-    const tree = store.get().tree
-    if (tree && root) {
+    // 多根工作区:聚合全部树;相对路径带根目录名前缀(如 `docs/子目录/x.md`)以区分同名文件
+    const { rootDirs, trees } = store.get()
+    rootDirs.forEach((root, i) => {
+      const tree = trees[i]
+      if (!tree) return
       const prefix = root.endsWith('/') ? root : root + '/'
+      const rootName = root.slice(root.lastIndexOf('/') + 1) || root
       const walk = (n: FileNode): void => {
         if (!n.isDir) {
-          const rel = n.path.startsWith(prefix) ? n.path.slice(prefix.length) : n.name
+          const inner = n.path.startsWith(prefix) ? n.path.slice(prefix.length) : n.name
+          const rel = `${rootName}/${inner}`
           out.push({ path: n.path, rel, relLower: rel.toLowerCase(), name: n.name })
         }
         n.children?.forEach(walk)
       }
       walk(tree)
-    }
+    })
     out.sort((a, b) => a.rel.localeCompare(b.rel))
     cands = out
     return out
@@ -211,11 +215,11 @@ export function initPalette(): void {
     if (e.target === overlay) close()
   })
 
-  store.on('tree', () => {
+  store.on('trees', () => {
     cands = null
     if (!overlay.hidden) update()
   })
-  store.on('rootDir', () => {
+  store.on('rootDirs', () => {
     cands = null
   })
   bus.on('show-palette', () => {

@@ -53,7 +53,15 @@ export function setSettings(patch: Partial<Settings>): Settings {
 }
 
 export function getSession(): SessionState {
-  if (!sessionState) sessionState = loadJson('session.json', DEFAULT_SESSION)
+  if (!sessionState) {
+    sessionState = loadJson('session.json', DEFAULT_SESSION)
+    // 兼容旧版:v0.x 的 session.json 用单数 rootDir(string);升级为 rootDirs 数组
+    const legacy = sessionState as SessionState & { rootDir?: string | null }
+    if (typeof legacy.rootDir === 'string' && legacy.rootDir && sessionState.rootDirs.length === 0) {
+      sessionState.rootDirs = [legacy.rootDir]
+    }
+    delete legacy.rootDir
+  }
   return sessionState
 }
 

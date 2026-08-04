@@ -65,7 +65,8 @@ export interface WindowBounds {
 
 /** 会话状态(窗口恢复) */
 export interface SessionState {
-  rootDir: string | null
+  /** 工作区根目录列表(VS Code 式多根;空数组 = 未打开目录) */
+  rootDirs: string[]
   openFile: string | null
   windowBounds?: WindowBounds
   expandedDirs: string[]
@@ -96,7 +97,7 @@ export const DEFAULT_SETTINGS: Settings = {
 }
 
 export const DEFAULT_SESSION: SessionState = {
-  rootDir: null,
+  rootDirs: [],
   openFile: null,
   expandedDirs: [],
   scrollPositions: {},

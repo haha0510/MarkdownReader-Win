@@ -14,7 +14,7 @@ const api: RendererApi = {
   renameEntry: (path: string, newName: string) => ipcRenderer.invoke(IPC.FsRename, path, newName),
   deleteEntry: (path: string) => ipcRenderer.invoke(IPC.FsDelete, path),
   exists: (path: string) => ipcRenderer.invoke(IPC.FsExists, path),
-  watch: (rootDir: string | null) => ipcRenderer.invoke(IPC.FsWatch, rootDir),
+  watch: (roots: string[] | null) => ipcRenderer.invoke(IPC.FsWatch, roots),
   reveal: (path: string) => ipcRenderer.invoke(IPC.FsReveal, path),
 
   getSettings: () => ipcRenderer.invoke(IPC.SettingsGet),
@@ -46,8 +46,8 @@ const api: RendererApi = {
   },
 
   // ── 主进程 → 渲染器推送 ──
-  onTreeChanged: (cb: (tree: FileNode) => void) => {
-    ipcRenderer.on(IPC.EvTreeChanged, (_e, tree: FileNode) => cb(tree))
+  onTreeChanged: (cb: (trees: FileNode[]) => void) => {
+    ipcRenderer.on(IPC.EvTreeChanged, (_e, trees: FileNode[]) => cb(trees))
   },
   onFileChanged: (cb: (path: string) => void) => {
     ipcRenderer.on(IPC.EvFileChanged, (_e, p: string) => cb(p))

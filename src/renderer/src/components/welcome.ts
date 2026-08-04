@@ -38,7 +38,7 @@ export function initWelcome(): void {
   const render = (): void => renderWelcome(el)
   // recentRoots / 目录态 / 语言变化时重渲染(元素隐藏时渲染开销可忽略)
   store.on('session', render)
-  store.on('rootDir', render)
+  store.on('rootDirs', render)
   store.on('lang', render)
   render()
 }
@@ -48,7 +48,7 @@ function renderWelcome(el: HTMLElement): void {
   const s = store.get()
   const icon = div('welcome-icon')
 
-  if (s.rootDir) {
+  if (s.rootDirs.length > 0) {
     // 目录已打开但未选择文件
     icon.innerHTML = ICON_DOC
     el.append(icon, div('welcome-hint', t('selectFileHint')))

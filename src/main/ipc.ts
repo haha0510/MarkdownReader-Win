@@ -9,7 +9,7 @@ import * as files from './files'
 import { exportPdf } from './pdf'
 import { allowRoot } from './protocol'
 import { getSession, getSettings, setSession, setSettings } from './store'
-import { setWatchRoot } from './watcher'
+import { setWatchRoots } from './watcher'
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
 
@@ -71,7 +71,9 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.FsRename, (_e, p: string, newName: string) => files.renameEntry(p, newName))
   ipcMain.handle(IPC.FsDelete, (_e, p: string) => files.deleteEntry(p))
   ipcMain.handle(IPC.FsExists, (_e, p: string) => files.exists(p))
-  ipcMain.handle(IPC.FsWatch, (_e, rootDir: string | null) => setWatchRoot(rootDir))
+  ipcMain.handle(IPC.FsWatch, (_e, roots: string[] | null) =>
+    setWatchRoots(Array.isArray(roots) ? roots : null)
+  )
   ipcMain.handle(IPC.FsReveal, (_e, p: string) => {
     shell.showItemInFolder(path.normalize(path.resolve(p)))
   })

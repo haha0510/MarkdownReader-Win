@@ -96,6 +96,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 多根工作区:根目录区块行(加粗,深度 0;其子节点整体缩进 +1) */
+.ft-row.ft-root .ft-name {
+  font-weight: 600;
+}
 /* 未保存标记 */
 .ft-row.dirty .ft-name::after {
   content: ' *';

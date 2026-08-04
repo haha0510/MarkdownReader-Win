@@ -85,19 +85,60 @@ async function openFileFlow(path: string): Promise<void> {
   }
 }
 
-async function openFolderFlow(dir: string): Promise<void> {
+/** 追加打开文件夹(多根工作区):已存在则忽略;成功后 append 到 rootDirs/trees 并重挂 watcher */
+async function addFolderFlow(dir: string): Promise<void> {
   const d = norm(dir)
+  const s = store.get()
+  if (s.rootDirs.includes(d)) {
+    // 已在工作区:仅前插 recentRoots,不重复追加
+    const recent = [d, ...s.session.recentRoots.filter((r) => r !== d)].slice(0, 8)
+    patchSession({ recentRoots: recent })
+    return
+  }
   try {
     const tree = await api.readTree(d)
-    store.set({ rootDir: d, tree })
-    void api.watch(d)
+    const rootDirs = [...store.get().rootDirs, d]
+    const trees = [...store.get().trees, tree]
+    store.set({ rootDirs, trees })
+    void api.watch(rootDirs)
     void api.allowRoot(d)
     // recentRoots:前插去重,上限 8
     const recent = [d, ...store.get().session.recentRoots.filter((r) => r !== d)].slice(0, 8)
-    patchSession({ rootDir: d, recentRoots: recent })
+    patchSession({ rootDirs, recentRoots: recent })
   } catch {
     bus.emit('toast', { message: t('win.loadError'), kind: 'error' })
   }
+}
+
+/** 从工作区移除单个根目录;移到 0 个自然回欢迎页 */
+function removeFolderFlow(dir: string): void {
+  const d = norm(dir)
+  const s = store.get()
+  const idx = s.rootDirs.indexOf(d)
+  if (idx < 0) return
+  const prefix = d.endsWith('/') ? d : d + '/'
+  // 当前文件在被移除根之下 → 关闭当前文件(dirty 时与 close-folder 同逻辑)
+  if (s.currentFile && (s.currentFile === d || s.currentFile.startsWith(prefix))) {
+    if (s.dirty) {
+      if (s.settings.autoSave) bus.emit('save-request')
+      else if (!window.confirm(t('win.confirmDiscardChanges'))) return
+    }
+    ++openSeq // 作废在途的打开请求
+    store.set({
+      currentFile: null,
+      content: '',
+      mtimeMs: 0,
+      dirty: false,
+      outline: [],
+      activeHeadingId: null,
+      selectedPath: null
+    })
+  }
+  const rootDirs = s.rootDirs.filter((_, i) => i !== idx)
+  const trees = store.get().trees.filter((_, i) => i !== idx)
+  store.set({ rootDirs, trees })
+  void api.watch(rootDirs.length ? rootDirs : null)
+  patchSession({ rootDirs })
 }
 
 /** 重读当前文件(reload-file 菜单/确认后的外部修改重载) */
@@ -227,9 +268,9 @@ async function pickAndOpen(kind: 'file' | 'folder'): Promise<void> {
   bus.emit(kind === 'file' ? 'open-file' : 'open-folder', norm(p))
 }
 
-/** 新建文件:根目录下生成不重名的「未命名 N.md」并打开;树由 watcher 自动刷新 */
+/** 新建文件:第一个根目录下生成不重名的「未命名 N.md」并打开;树由 watcher 自动刷新 */
 async function createNewFile(): Promise<void> {
-  const root = store.get().rootDir
+  const root = store.get().rootDirs[0]
   if (!root) return
   const base = t('win.newFileDefaultName')
   let name = `${base}.md`
@@ -334,9 +375,13 @@ async function bootstrap(): Promise<void> {
     void openFileFlow(p as string)
   })
   bus.on('open-folder', (p) => {
-    void openFolderFlow(p as string)
+    void addFolderFlow(p as string)
   })
-  // 关闭文件夹:清空树与当前文件,回到欢迎页
+  // 从工作区移除单个根目录
+  bus.on('remove-folder', (p) => {
+    if (typeof p === 'string' && p) removeFolderFlow(p)
+  })
+  // 关闭全部文件夹:清空树与当前文件,回到欢迎页
   bus.on('close-folder', () => {
     const s = store.get()
     if (s.dirty) {
@@ -345,8 +390,8 @@ async function bootstrap(): Promise<void> {
     }
     ++openSeq // 作废在途的打开请求
     store.set({
-      rootDir: null,
-      tree: null,
+      rootDirs: [],
+      trees: [],
       currentFile: null,
       content: '',
       mtimeMs: 0,
@@ -356,7 +401,7 @@ async function bootstrap(): Promise<void> {
       selectedPath: null
     })
     void api.watch(null)
-    patchSession({ rootDir: null, openFile: null })
+    patchSession({ rootDirs: [], openFile: null })
   })
 
   bindStoreToDom()
@@ -384,19 +429,19 @@ async function bootstrap(): Promise<void> {
   api.onOpenPath((raw) => {
     const p = norm(raw)
     if (isMarkdownPath(p)) {
-      // 尚无根目录时先打开其父目录,再打开文件
-      if (!store.get().rootDir) bus.emit('open-folder', dirname(p))
+      // 尚无根目录时先打开其父目录,再打开文件(已有根时不追加,保持工作区不变)
+      if (store.get().rootDirs.length === 0) bus.emit('open-folder', dirname(p))
       bus.emit('open-file', p)
     } else {
       bus.emit('open-folder', p)
     }
   })
   api.onFileChanged((p) => void onExternalFileChanged(p))
-  api.onTreeChanged((tree) => store.set({ tree }))
+  api.onTreeChanged((trees) => store.set({ trees }))
   api.onSystemThemeChanged((dark) => store.set({ systemDark: dark }))
 
-  // 5. 会话恢复
-  if (session.rootDir) bus.emit('open-folder', session.rootDir)
+  // 5. 会话恢复:逐个 emit open-folder(addFolderFlow 天然去重追加;watch 会被多次覆盖,最后一次为准)
+  for (const r of session.rootDirs) bus.emit('open-folder', r)
   if (session.openFile) bus.emit('open-file', session.openFile)
 
   // 脏状态镜像到主进程:关闭拦截在 main 做(beforeunload 里 confirm 被 Chromium 屏蔽,不可用)
@@ -418,10 +463,10 @@ async function bootstrap(): Promise<void> {
       const p = norm(raw)
       if (isMarkdownPath(p)) {
         // 与 onOpenPath 语义一致:尚无根目录时先带出该文件所在文件夹作上下文
-        if (!store.get().rootDir) bus.emit('open-folder', dirname(p))
+        if (store.get().rootDirs.length === 0) bus.emit('open-folder', dirname(p))
         bus.emit('open-file', p)
       } else {
-        // 无扩展名视为目录(File 对象拿不到 isDirectory;交给 open-folder 流程报错兜底)
+        // 无扩展名视为目录(File 对象拿不到 isDirectory;交给 open-folder 流程报错兜底);拖入文件夹 = 追加
         bus.emit('open-folder', p)
       }
     } catch {

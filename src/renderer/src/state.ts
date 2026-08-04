@@ -4,9 +4,10 @@ import type { DisplayMode, FileNode, OutlineItem, Settings, SessionState } from 
 import { DEFAULT_SESSION, DEFAULT_SETTINGS } from '@shared/types'
 
 export interface AppState {
-  /** 打开的根目录(单文件模式为 null) */
-  rootDir: string | null
-  tree: FileNode | null
+  /** 打开的工作区根目录列表(单文件模式/空态为 []) */
+  rootDirs: string[]
+  /** 每个根目录的树(与 rootDirs 下标对齐) */
+  trees: FileNode[]
   /** 当前文件绝对路径 */
   currentFile: string | null
   /** 当前文件内容(编辑中为编辑器内容) */
@@ -36,8 +37,8 @@ export interface AppState {
 type Listener<K extends keyof AppState> = (value: AppState[K], prev: AppState[K]) => void
 
 const state: AppState = {
-  rootDir: null,
-  tree: null,
+  rootDirs: [],
+  trees: [],
   currentFile: null,
   content: '',
   mtimeMs: 0,

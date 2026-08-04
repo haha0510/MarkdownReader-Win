@@ -12,10 +12,10 @@ export function allowRoot(dir: string): void {
   if (typeof dir === 'string' && dir.trim()) allowedRoots.add(path.resolve(dir))
 }
 
-/** 切换工作目录时收缩授权面:清空累积的旧根,只保留新根(null 仅清空) */
-export function resetAllowedRoots(dir: string | null): void {
+/** 切换工作区时收缩授权面:清空累积的旧根,只保留当前多根列表(null/空数组 仅清空) */
+export function resetAllowedRoots(roots: string[] | null): void {
   allowedRoots.clear()
-  if (dir) allowRoot(dir)
+  for (const dir of roots ?? []) allowRoot(dir)
 }
 
 // target 是否位于某个已允许根之内;win32 大小写不敏感,用 path.relative 判断而非 startsWith

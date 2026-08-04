@@ -32,17 +32,17 @@ CSS 引入方式:每个 agent 的 .css 由自己名下的某个 .ts `import` 引
 ## 2. 启动时序(app.ts 责任,C 实现,其他 agent 依赖此顺序)
 
 1. `initI18n()` — 读 settings.language + api.getLocale() 解析 `store.lang`。
-2. `api.getSettings()` / `api.getSession()` → 写入 store(zoom、mode、sidebar/outline 可见性与宽度、rootDir、openFile 等从 session 恢复)。
+2. `api.getSettings()` / `api.getSession()` → 写入 store(zoom、mode、sidebar/outline 可见性与宽度、rootDirs、openFile 等从 session 恢复)。
 3. `initTheme()`(F)— 应用主题 CSS 变量,之后 emit `theme-changed`。
 4. `initTitlebar() initWelcome() initResize() initToast() initFiletree() initOutline() initPalette() initSettingsUI() initViewer() initEditor() initFindbar() initKeyboard()`。
-5. 恢复会话:若 session.rootDir 存在 → bus.emit('open-folder', rootDir);再若 openFile 存在 → bus.emit('open-file', openFile)。
+5. 恢复会话:对 session.rootDirs 逐个 → bus.emit('open-folder', root)(追加式多根工作区);再若 openFile 存在 → bus.emit('open-file', openFile)。
 6. 注册 `api.onMenuAction` 分发(转成 bus 事件或直接调 store)、`api.onOpenPath`、`api.onFileChanged`、`api.onTreeChanged`、`api.onSystemThemeChanged`。
 7. 空态时显示 welcome(`store.currentFile == null` ⇔ #welcome 可见,#viewer-scroll/#editor 隐藏)。
 8. 一切就绪后调用 `api.ready()` — 主进程此后才会推送 EvOpenPath(文件关联/命令行启动参数)。
 
 **open-file 流程(C 在 app.ts 实现,D/E 消费结果):**
-`bus('open-file', path)` → 若 dirty 先 confirm(用 t() 文案 + window.confirm)→ `api.readFile` → `store.set({currentFile, content, mtimeMs, dirty:false, outline:[]})` → `api.allowRoot(其目录)` → `api.setTitle` → bus.emit('file-loaded') → session 持久化(openFile、recentRoots)。viewer/editor 监听 `file-loaded` 自行刷新;单文件打开(无 rootDir)时 sidebar 显示该文件所在目录?否——保持 tree 为空,welcome 隐藏。
-**open-folder 流程:** `api.readTree` → `store.set({rootDir, tree})` → `api.watch(rootDir)` → `api.allowRoot(rootDir)` → session 持久化。
+`bus('open-file', path)` → 若 dirty 先 confirm(用 t() 文案 + window.confirm)→ `api.readFile` → `store.set({currentFile, content, mtimeMs, dirty:false, outline:[]})` → `api.allowRoot(其目录)` → `api.setTitle` → bus.emit('file-loaded') → session 持久化(openFile、recentRoots)。viewer/editor 监听 `file-loaded` 自行刷新;单文件打开(rootDirs 为空)时 sidebar 显示该文件所在目录?否——保持 trees 为空,welcome 隐藏。
+**open-folder 流程(多根,追加去重):** `api.readTree` → append 到 `store.rootDirs/trees` → `api.watch(全部 rootDirs)` → `api.allowRoot(该根)` → session 持久化(rootDirs)。`bus('remove-folder', root)` 移除单根;`bus('close-folder')` 清空全部。
 
 ## 3. DOM 契约
 
@@ -94,7 +94,7 @@ Ctrl+O 打开文件、Ctrl+Shift+O 打开文件夹、Ctrl+N 新建、Ctrl+S 保�
 - 窗口:`titleBarStyle:'hidden'` + `titleBarOverlay:{height:40}`,min 720×480,默认 1200×800,恢复 session.windowBounds(校验在屏幕内);`backgroundColor` 用 session 存的上次主题背景(新增 session 字段不要;直接用 '#1e1e1e' 若 nativeTheme.shouldUseDarkColors else '#ffffff')。
 - 单实例锁;第二实例 argv 中的 .md/目录路径 → `EvOpenPath` + 窗口前置。首实例启动 argv 同理(渲染器 ready 后再发,用 `ipcMain.once('renderer-ready')` 或首个 SessionGet 后 setTimeout 发)。
 - `mdr://` 协议(`protocol.handle`):URL 形如 `mdr://local/<encodeURIComponent(绝对路径)>`;仅允许读取 `ProtocolAllowRoot` 注册过的根目录之内的文件;按扩展名给 mime;越界/不存在返回 404。`registerSchemesAsPrivileged`(standard:false, stream 支持即可,supportFetchAPI: true)在 app ready 前调用。
-- watcher:chokidar 监控 rootDir(忽略 node_modules/.git/隐藏目录,depth 合理),事件去抖 300ms → 重新 readTree → `EvTreeChanged`;当前打开文件内容变化(add/change 且 path===session.openFile 不必判断,全部 change 事件转发 `EvFileChanged`)。
+- watcher:chokidar 监控 rootDirs 数组(单 watcher 多路径;忽略 node_modules/.git/隐藏目录,depth 合理),事件去抖 300ms → 对每个根重新 readTree → `EvTreeChanged`(FileNode[],与 roots 顺序一致;某根读失败用上次成功树/空 children 兜底);当前打开文件内容变化(add/change 且 path===session.openFile 不必判断,全部 change 事件转发 `EvFileChanged`)。
 - settings.json / session.json 存 `app.getPath('userData')`,写入原子(先写 tmp 再 rename),读失败回默认值。
 - 菜单:注册第 7 节加速键(菜单不可见也要 `Menu.setApplicationMenu`,Windows 下 hidden titlebar 无菜单栏,但加速键生效);另注册 F12/Ctrl+Shift+I 开 DevTools(仅 dev)。
 - PDF:`ExportPdf` → 显示保存对话框(默认名 suggestedName + '.pdf')→ `webContents.printToPDF({printBackground:true, preferCSSPageSize:false, margins 默认})`。渲染器侧(D)导出前给 body 加 `.exporting-pdf` class……不,简化:主进程直接 printToPDF 当前页面,viewer.css 提供 `@media print`:隐藏 titlebar/sidebar/outline/findbar,正文全宽。

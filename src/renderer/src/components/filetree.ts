@@ -1,4 +1,4 @@
-// 文件树面板 — 渲染 store.tree、展开/选择/键盘导航、右键菜单、内联新建/重命名
+// 文件树面板 — 渲染 store.trees(多根工作区)、展开/选择/键盘导航、右键菜单、内联新建/重命名
 import '@/styles/panels.css'
 import { store } from '@/state'
 import type { AppState } from '@/state'
@@ -43,8 +43,10 @@ export function initFiletree(): void {
   const treeEl = document.getElementById('filetree') as HTMLElement
   const headerEl = document.getElementById('sidebar-header') as HTMLElement
 
-  /** 展开目录集合(session 恢复/持久化) */
+  /** 展开目录集合(session 恢复/持久化;根目录路径也并入此集合) */
   let expanded = new Set<string>(store.get().session.expandedDirs)
+  /** 已自动默认展开过的根(避免用户手动折叠后又被强制展开) */
+  const seenRoots = new Set<string>()
   /** path → 行元素 */
   const rows = new Map<string, HTMLElement>()
   /** 当前内联编辑的取消函数(同一时刻至多一个) */
@@ -67,58 +69,74 @@ export function initFiletree(): void {
     void api.setSession({ expandedDirs: list }).catch(() => {})
   }
 
+  /** path 属于哪个根(返回根路径;不属于任何根返回 null) */
+  function rootOf(p: string): string | null {
+    for (const r of store.get().rootDirs) {
+      if (p === r || p.startsWith(rootPrefix(r))) return r
+    }
+    return null
+  }
+
   // ── 渲染 ──
   function renderHeader(): void {
     headerEl.textContent = ''
-    const root = store.get().rootDir
+    const roots = store.get().rootDirs
     const name = document.createElement('span')
     name.className = 'sb-root-name'
-    name.textContent = root ? baseName(root) || root : ''
-    name.title = root ?? ''
+    // 标题:单根显示目录名;多根显示「n 个文件夹」
+    if (roots.length === 1) {
+      name.textContent = baseName(roots[0]) || roots[0]
+      name.title = roots[0]
+    } else if (roots.length > 1) {
+      name.textContent = t('win.foldersTitle', { n: roots.length })
+      name.title = roots.join('\n')
+    }
     headerEl.appendChild(name)
-    if (root) {
-      // 打开其他文件夹
-      const btnOpen = document.createElement('button')
-      btnOpen.className = 'sb-refresh'
-      btnOpen.title = t('commandPaletteOpenFolder')
-      btnOpen.innerHTML =
+    if (roots.length > 0) {
+      // 添加文件夹(追加到工作区)
+      const btnAdd = document.createElement('button')
+      btnAdd.className = 'sb-refresh'
+      btnAdd.title = t('win.addFolder')
+      btnAdd.innerHTML =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>'
-      btnOpen.addEventListener('click', () => {
+      btnAdd.addEventListener('click', () => {
         void api.openDialog('folder').then((p) => {
           if (p) bus.emit('open-folder', p.replace(/\\/g, '/'))
         })
       })
-      // 刷新
+      // 刷新(全部根)
       const btn = document.createElement('button')
       btn.className = 'sb-refresh'
       btn.title = t('titleBarReload')
       btn.innerHTML = SVG_REFRESH
       btn.addEventListener('click', () => void refreshTree())
-      // 关闭文件夹(返回欢迎页)
+      // 全部关闭(返回欢迎页)
       const btnClose = document.createElement('button')
       btnClose.className = 'sb-refresh'
       btnClose.title = t('win.closeFolder')
       btnClose.innerHTML =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
       btnClose.addEventListener('click', () => bus.emit('close-folder'))
-      headerEl.append(btnOpen, btn, btnClose)
+      headerEl.append(btnAdd, btn, btnClose)
     }
   }
 
+  /** 刷新全部根的树 */
   async function refreshTree(): Promise<void> {
-    const root = store.get().rootDir
-    if (!root) return
+    const roots = store.get().rootDirs
+    if (roots.length === 0) return
     try {
-      const tree = await api.readTree(root)
-      store.set({ tree })
+      const trees = await Promise.all(roots.map((r) => api.readTree(r)))
+      if (store.get().rootDirs === roots) store.set({ trees })
     } catch {
       toastErr(t('win.loadError'))
     }
   }
 
-  function makeRow(n: FileNode, depth: number): HTMLElement {
+  function makeRow(n: FileNode, depth: number, isRoot = false): HTMLElement {
     const row = document.createElement('div')
-    row.className = 'ft-row' + (n.isDir && expanded.has(n.path) ? ' expanded' : '')
+    row.className =
+      'ft-row' + (isRoot ? ' ft-root' : '') + (n.isDir && expanded.has(n.path) ? ' expanded' : '')
     row.dataset.path = n.path
     row.dataset.dir = String(n.isDir)
     row.style.setProperty('--depth', String(depth))
@@ -131,7 +149,7 @@ export function initFiletree(): void {
     const name = document.createElement('span')
     name.className = 'ft-name'
     name.textContent = n.name
-    name.title = n.name
+    name.title = isRoot ? n.path : n.name
     row.append(twist, icon, name)
     rows.set(n.path, row)
     return row
@@ -161,18 +179,38 @@ export function initFiletree(): void {
     rows.clear()
     treeEl.textContent = ''
     const st = store.get()
-    const tree = st.tree
-    if (!tree || !tree.children || tree.children.length === 0) {
-      if (st.rootDir && tree) {
+    if (st.rootDirs.length === 0) return
+    // 首次见到的根默认展开并持久化
+    let expandedChanged = false
+    for (const r of st.rootDirs) {
+      if (!seenRoots.has(r)) {
+        seenRoots.add(r)
+        if (!expanded.has(r)) {
+          expanded.add(r)
+          expandedChanged = true
+        }
+      }
+    }
+    if (expandedChanged) persistExpanded()
+    const frag = document.createDocumentFragment()
+    // 每个根渲染一个顶层区块行(.ft-root,深度 0),其子节点整体缩进 +1
+    st.rootDirs.forEach((root, i) => {
+      const tree = st.trees[i]
+      const rootNode: FileNode = tree ?? { name: baseName(root) || root, path: root, isDir: true, children: [] }
+      frag.appendChild(makeRow({ ...rootNode, name: rootNode.name || baseName(root) || root }, 0, true))
+      const kids = document.createElement('div')
+      kids.className = 'ft-children' + (expanded.has(rootNode.path) ? '' : ' collapsed')
+      if (rootNode.children && rootNode.children.length > 0) {
+        buildNodes(rootNode.children, 1, kids)
+      } else {
+        // 该根下没有 markdown 文件
         const empty = document.createElement('div')
         empty.className = 'panel-empty muted'
         empty.textContent = t('win.emptyTree')
-        treeEl.appendChild(empty)
+        kids.appendChild(empty)
       }
-      return
-    }
-    const frag = document.createDocumentFragment()
-    buildNodes(tree.children, 0, frag)
+      frag.appendChild(kids)
+    })
     treeEl.appendChild(frag)
     syncDirty()
     updateSelection()
@@ -215,9 +253,14 @@ export function initFiletree(): void {
 
   /** 展开祖先并选中(打开文件/reveal 时) */
   function revealPath(path: string): void {
-    const root = store.get().rootDir
+    const root = rootOf(path)
     if (root && path.startsWith(rootPrefix(root))) {
       let changed = false
+      // 根行自身也要展开
+      if (!expanded.has(root)) {
+        setExpanded(root, true, false)
+        changed = true
+      }
       let p = parentOf(path)
       while (p && p.length > root.length) {
         if (!expanded.has(p)) {
@@ -278,19 +321,17 @@ export function initFiletree(): void {
 
   function startCreate(dirPath: string, kind: 'file' | 'folder'): void {
     cancelEdit?.()
-    const root = store.get().rootDir
-    if (!root) return
+    if (store.get().rootDirs.length === 0) return
+    // 根行现在也在 rows 里,目录行(含根)统一走展开+子容器逻辑
     let container: HTMLElement = treeEl
     let depth = 0
-    if (dirPath !== root) {
-      const dirRow = rows.get(dirPath)
-      if (dirRow) {
-        setExpanded(dirPath, true)
-        const kids = dirRow.nextElementSibling
-        if (kids instanceof HTMLElement && kids.classList.contains('ft-children')) {
-          container = kids
-          depth = Number(dirRow.style.getPropertyValue('--depth') || '0') + 1
-        }
+    const dirRow = rows.get(dirPath)
+    if (dirRow) {
+      setExpanded(dirPath, true)
+      const kids = dirRow.nextElementSibling
+      if (kids instanceof HTMLElement && kids.classList.contains('ft-children')) {
+        container = kids
+        depth = Number(dirRow.style.getPropertyValue('--depth') || '0') + 1
       }
     }
     const { row, input } = makeEditRow(depth, kind, kind === 'file' ? t('win.newFileDefaultName') : '')
@@ -453,6 +494,35 @@ export function initFiletree(): void {
   }
 
   // ── 右键菜单 ──
+
+  /** 根行专属菜单:显示 / 新建 / 从侧栏移除(不提供重命名/删除,根目录本身不在应用内改动) */
+  async function showRootMenu(root: string): Promise<void> {
+    const items: PopupItem[] = [
+      { id: 'reveal', label: t('contextMenuOpenInFinder') },
+      { type: 'separator' },
+      { id: 'new-file', label: t('contextMenuNewFile') },
+      { id: 'new-folder', label: t('contextMenuNewSubdirectory') },
+      { type: 'separator' },
+      { id: 'remove-root', label: t('win.removeFolder') }
+    ]
+    const id = await api.popupMenu(items)
+    if (!id) return
+    switch (id) {
+      case 'reveal':
+        void api.reveal(root)
+        break
+      case 'new-file':
+        startCreate(root, 'file')
+        break
+      case 'new-folder':
+        startCreate(root, 'folder')
+        break
+      case 'remove-root':
+        bus.emit('remove-folder', root)
+        break
+    }
+  }
+
   async function showRowMenu(path: string, isDir: boolean): Promise<void> {
     const items: PopupItem[] = []
     if (!isDir) items.push({ id: 'open', label: t('open') })
@@ -489,7 +559,8 @@ export function initFiletree(): void {
   }
 
   async function showBlankMenu(): Promise<void> {
-    const root = store.get().rootDir
+    // 空白区菜单作用于第一个根
+    const root = store.get().rootDirs[0]
     if (!root) return
     const items: PopupItem[] = [
       { id: 'new-file', label: t('contextMenuNewFile') },
@@ -517,8 +588,12 @@ export function initFiletree(): void {
     e.preventDefault()
     const row = (e.target as HTMLElement).closest('.ft-row') as HTMLElement | null
     const path = row?.dataset.path
-    if (row && path) void showRowMenu(path, row.dataset.dir === 'true')
-    else void showBlankMenu()
+    if (row && path) {
+      if (row.classList.contains('ft-root')) void showRootMenu(path)
+      else void showRowMenu(path, row.dataset.dir === 'true')
+    } else {
+      void showBlankMenu()
+    }
   })
 
   treeEl.addEventListener('keydown', (e) => {
@@ -565,10 +640,10 @@ export function initFiletree(): void {
     }
   })
 
-  /** 外部删除目录后清理 expanded 中已不存在的路径(与新树目录集合求交集) */
-  function pruneExpanded(tree: FileNode | null): void {
-    if (!tree || expanded.size === 0) return
-    const dirs = new Set<string>()
+  /** 外部删除目录后清理 expanded 中已不存在的路径(与全部新树目录集合求交集;根路径始终保留) */
+  function pruneExpanded(trees: FileNode[]): void {
+    if (trees.length === 0 || expanded.size === 0) return
+    const dirs = new Set<string>(store.get().rootDirs)
     const walk = (nodes: FileNode[] | undefined): void => {
       if (!nodes) return
       for (const n of nodes) {
@@ -578,7 +653,10 @@ export function initFiletree(): void {
         }
       }
     }
-    walk(tree.children)
+    for (const tree of trees) {
+      dirs.add(tree.path)
+      walk(tree.children)
+    }
     let changed = false
     for (const p of [...expanded]) {
       if (!dirs.has(p)) {
@@ -590,28 +668,28 @@ export function initFiletree(): void {
   }
 
   // ── store / bus 订阅 ──
-  store.on('tree', (tree) => {
-    pruneExpanded(tree)
+  store.on('trees', (trees) => {
+    pruneExpanded(trees)
     renderTree()
     renderHeader()
   })
-  store.on('rootDir', (root, prev) => {
+  store.on('rootDirs', (roots) => {
     renderHeader()
-    if (!root) {
+    if (roots.length === 0) {
       cancelEdit?.() // 直接清空 DOM 前先结束内联编辑,避免 cancelEdit 悬挂导致后续渲染永远暂缓
       pendingTree = false
       rows.clear()
       treeEl.textContent = ''
+      seenRoots.clear()
       return
     }
-    // 切换到不同根目录时丢弃旧的展开项
-    if (prev && prev !== root) {
-      const pre = rootPrefix(root)
-      const next = new Set([...expanded].filter((p) => p.startsWith(pre)))
-      if (next.size !== expanded.size) {
-        expanded = next
-        persistExpanded()
-      }
+    // 移除根后丢弃不属于任何现存根的展开项(根路径自身也算其根内)
+    const next = new Set(
+      [...expanded].filter((p) => roots.some((r) => p === r || p.startsWith(rootPrefix(r))))
+    )
+    if (next.size !== expanded.size) {
+      expanded = next
+      persistExpanded()
     }
   })
   store.on('selectedPath', updateSelection)
@@ -622,7 +700,8 @@ export function initFiletree(): void {
   store.on('dirty', syncDirty)
   store.on('session', (s) => {
     // 启动顺序兜底:树渲染前采纳会话恢复的展开集
-    if (!store.get().tree && expanded.size === 0 && s.expandedDirs.length) expanded = new Set(s.expandedDirs)
+    if (store.get().trees.length === 0 && expanded.size === 0 && s.expandedDirs.length)
+      expanded = new Set(s.expandedDirs)
   })
   bus.on('reveal-in-tree', (p) => {
     if (typeof p === 'string' && p) {
