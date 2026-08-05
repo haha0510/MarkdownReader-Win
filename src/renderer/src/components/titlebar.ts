@@ -22,6 +22,9 @@ const ICON_GEAR =
 // AI 助手 — sparkles(闪光),风格与其它图标一致
 const ICON_AI =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>'
+// 导出 PDF — 下载图标
+const ICON_EXPORT =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
 
 const sendAction = (a: MenuAction): void => {
   window.dispatchEvent(new CustomEvent<MenuAction>('app:menu-action', { detail: a }))
@@ -37,9 +40,10 @@ export function initTitlebar(): void {
   const btnTheme = document.getElementById('btn-theme')
   const btnSettings = document.getElementById('btn-settings')
   const btnAi = document.getElementById('btn-ai')
+  const btnExport = document.getElementById('btn-export')
   const docTitle = document.getElementById('doc-title')
   const docDirty = document.getElementById('doc-dirty')
-  if (!btnSidebar || !btnOutline || !btnMode || !btnTheme || !btnSettings || !btnAi || !docTitle || !docDirty) return
+  if (!btnSidebar || !btnOutline || !btnMode || !btnTheme || !btnSettings || !btnAi || !btnExport || !docTitle || !docDirty) return
 
   btnSidebar.innerHTML = ICON_SIDEBAR
   btnSidebar.addEventListener('click', () => sendAction('toggle-sidebar'))
@@ -66,6 +70,9 @@ export function initTitlebar(): void {
   // AI 助手:与其它标题栏按钮相同的分发方式,交 app.ts 统一处理 'toggle-ai'
   btnAi.innerHTML = ICON_AI
   btnAi.addEventListener('click', () => sendAction('toggle-ai'))
+  // 导出 PDF
+  btnExport.innerHTML = ICON_EXPORT
+  btnExport.addEventListener('click', () => sendAction('export-pdf'))
 
   // 静态提示文案(语言变化时重设)
   const syncTitles = (): void => {
@@ -74,6 +81,7 @@ export function initTitlebar(): void {
     btnTheme.title = t('settingsAppearanceThemeTitle')
     btnSettings.title = winShortcut(t('sidebarSettings'))
     btnAi.title = t('win.aiTitle')
+    btnExport.title = `${t('titleBarExportPDF')} (Ctrl+Alt+E)`
     syncMode()
   }
 
