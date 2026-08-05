@@ -14,6 +14,12 @@ const api: RendererApi = {
   renameEntry: (path: string, newName: string) => ipcRenderer.invoke(IPC.FsRename, path, newName),
   moveEntry: (srcPath: string, destDir: string) => ipcRenderer.invoke(IPC.FsMove, srcPath, destDir),
   searchContent: (roots: string[], query: string) => ipcRenderer.invoke(IPC.FsSearch, roots, query),
+  aiStream: (req) => ipcRenderer.invoke(IPC.AiStream, req),
+  aiCancel: (id: string) => ipcRenderer.invoke(IPC.AiCancel, id),
+  aiTest: (cfg) => ipcRenderer.invoke(IPC.AiTest, cfg),
+  onAiDelta: (cb) => {
+    ipcRenderer.on(IPC.EvAiDelta, (_e, d) => cb(d))
+  },
   deleteEntry: (path: string) => ipcRenderer.invoke(IPC.FsDelete, path),
   exists: (path: string) => ipcRenderer.invoke(IPC.FsExists, path),
   watch: (roots: string[] | null) => ipcRenderer.invoke(IPC.FsWatch, roots),

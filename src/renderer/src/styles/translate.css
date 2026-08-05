@@ -1,0 +1,82 @@
+/* 翻译对照视图 — 原文左 / 译文右 分栏。
+   #translate-scroll 默认覆盖整个内容区并隐藏;开启时(html[data-translate])占右半。 */
+
+/* 译栏滚动容器:默认与 #viewer-scroll 同为 absolute inset:0(index.html 已带 hidden) */
+#translate-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--md-bg);
+  z-index: 6; /* 盖住 welcome 之类,但仅在开启且有文档时可见 */
+}
+
+/* 开启:左栏(渲染视图或编辑器)让出右半,译栏占右半 */
+html[data-translate='true'] #viewer-scroll {
+  right: 50%;
+  border-right: 1px solid var(--md-border);
+}
+/* 原文模式下左侧是编辑器,同样让出右半 */
+html[data-translate='true'] #editor {
+  right: 50%;
+  border-right: 1px solid var(--md-border);
+}
+html[data-translate='true'] #translate-scroll {
+  left: 50%;
+  right: 0;
+}
+
+/* 译栏顶部细条:标题 + 目标语言 + 状态 + 重新翻译 / 关闭 */
+.tr-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 8px 0 14px;
+  background: color-mix(in srgb, var(--md-bg) 92%, var(--ui-fg) 8%);
+  border-bottom: 1px solid var(--md-border);
+  font-size: 12px;
+  color: var(--md-fg);
+  user-select: none;
+}
+.tr-head-title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tr-status {
+  color: var(--ui-fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.tr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--md-fg);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.tr-btn:hover {
+  background: var(--ui-hover);
+}
+
+/* 译栏错误提示 */
+.tr-error {
+  margin: 24px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--ui-danger);
+  border-radius: var(--ui-radius);
+  color: var(--ui-danger);
+  font-size: 13px;
+  line-height: 1.6;
+}

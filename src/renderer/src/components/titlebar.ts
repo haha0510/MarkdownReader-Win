@@ -19,6 +19,9 @@ const ICON_THEME =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>'
 const ICON_GEAR =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+// AI 助手 — sparkles(闪光),风格与其它图标一致
+const ICON_AI =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0L14.06 8.5A2 2 0 0 0 15.5 9.94l6.14 1.58a.5.5 0 0 1 0 .96L15.5 14.06a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>'
 
 const sendAction = (a: MenuAction): void => {
   window.dispatchEvent(new CustomEvent<MenuAction>('app:menu-action', { detail: a }))
@@ -33,9 +36,10 @@ export function initTitlebar(): void {
   const btnMode = document.getElementById('btn-mode')
   const btnTheme = document.getElementById('btn-theme')
   const btnSettings = document.getElementById('btn-settings')
+  const btnAi = document.getElementById('btn-ai')
   const docTitle = document.getElementById('doc-title')
   const docDirty = document.getElementById('doc-dirty')
-  if (!btnSidebar || !btnOutline || !btnMode || !btnTheme || !btnSettings || !docTitle || !docDirty) return
+  if (!btnSidebar || !btnOutline || !btnMode || !btnTheme || !btnSettings || !btnAi || !docTitle || !docDirty) return
 
   btnSidebar.innerHTML = ICON_SIDEBAR
   btnSidebar.addEventListener('click', () => sendAction('toggle-sidebar'))
@@ -59,6 +63,9 @@ export function initTitlebar(): void {
   })
   btnSettings.innerHTML = ICON_GEAR
   btnSettings.addEventListener('click', () => bus.emit('show-settings'))
+  // AI 助手:与其它标题栏按钮相同的分发方式,交 app.ts 统一处理 'toggle-ai'
+  btnAi.innerHTML = ICON_AI
+  btnAi.addEventListener('click', () => sendAction('toggle-ai'))
 
   // 静态提示文案(语言变化时重设)
   const syncTitles = (): void => {
@@ -66,6 +73,7 @@ export function initTitlebar(): void {
     btnOutline.title = t('titleBarToggleOutline')
     btnTheme.title = t('settingsAppearanceThemeTitle')
     btnSettings.title = winShortcut(t('sidebarSettings'))
+    btnAi.title = t('win.aiTitle')
     syncMode()
   }
 

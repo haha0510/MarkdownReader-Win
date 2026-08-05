@@ -54,6 +54,12 @@ export function initKeyboard(): void {
         send(e.shiftKey ? 'toggle-outline' : 'toggle-sidebar')
         return
       }
+      // Ctrl+J 打开 AI 面板
+      if (e.key.toLowerCase() === 'j') {
+        e.preventDefault()
+        send('toggle-ai')
+        return
+      }
       // Ctrl+Tab 切换标签
       if (e.key === 'Tab') {
         e.preventDefault()

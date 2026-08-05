@@ -1,0 +1,216 @@
+/* AI 对话面板 — 右侧抽屉 + 选中浮动按钮 */
+
+#ai-panel {
+  position: fixed;
+  top: 40px; /* 标题栏下 */
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  max-width: 92vw;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-panel-bg);
+  border-left: 1px solid var(--ui-border);
+  box-shadow: -6px 0 24px rgba(0, 0, 0, 0.18);
+}
+#ai-panel[hidden] {
+  display: none;
+}
+
+/* 头部 */
+.ai-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--ui-border);
+}
+.ai-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ui-fg);
+  white-space: nowrap;
+}
+.ai-header-spacer {
+  flex: 1;
+}
+.ai-hbtn {
+  flex: none;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-fg);
+  font: 12px var(--ui-font);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ai-hbtn:hover {
+  background: var(--ui-hover);
+}
+.ai-hbtn.ai-close {
+  padding: 0 8px;
+  border-color: transparent;
+  color: var(--ui-fg-muted);
+  font-size: 14px;
+}
+.ai-hbtn.ai-close:hover {
+  color: var(--ui-fg);
+  background: var(--ui-hover);
+}
+
+/* 消息区 */
+.ai-messages {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-msg {
+  max-width: 92%;
+  padding: 8px 10px;
+  border-radius: var(--ui-radius);
+  font-size: 13px;
+  line-height: 1.55;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+/* 用户气泡:右对齐 */
+.ai-user {
+  align-self: flex-end;
+  background: var(--ui-selection);
+  color: var(--ui-fg);
+  white-space: pre-wrap;
+}
+/* 助手气泡:左对齐,透明底,markdown 排版略小 */
+.ai-assistant {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--ui-fg);
+  max-width: 100%;
+  padding: 0 2px;
+  font-size: 13px;
+}
+.ai-assistant.markdown-body {
+  --md-font-size: 13px;
+}
+.ai-assistant.markdown-body > *:first-child {
+  margin-top: 0;
+}
+.ai-assistant.markdown-body > *:last-child {
+  margin-bottom: 0;
+}
+.ai-loading {
+  color: var(--ui-fg-muted);
+  font-style: italic;
+}
+.ai-error {
+  align-self: stretch;
+  max-width: 100%;
+  background: transparent;
+  color: var(--ui-danger);
+  white-space: pre-wrap;
+}
+
+/* 选中上下文引用块 */
+.ai-context {
+  align-self: stretch;
+  border-left: 3px solid var(--ui-accent);
+  background: var(--ui-hover);
+  border-radius: 0 var(--ui-radius) var(--ui-radius) 0;
+  padding: 6px 10px;
+}
+.ai-context-label {
+  font-size: 11px;
+  color: var(--ui-fg-muted);
+  margin-bottom: 3px;
+}
+.ai-context-text {
+  font-size: 12px;
+  color: var(--ui-fg);
+  white-space: pre-wrap;
+  max-height: 6.5em;
+  overflow: auto;
+}
+
+/* 输入区 */
+.ai-input-area {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--ui-border);
+}
+.ai-input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 96px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+  color: var(--ui-fg);
+  font: 13px var(--ui-font);
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+.ai-input:focus {
+  border-color: var(--ui-accent);
+}
+.ai-input::placeholder {
+  color: var(--ui-fg-muted);
+}
+.ai-send {
+  flex: none;
+  height: 36px;
+  min-width: 36px;
+  padding: 0 10px;
+  border: none;
+  border-radius: var(--ui-radius);
+  background: var(--ui-accent);
+  color: var(--ui-accent-fg);
+  font: 12px var(--ui-font);
+  cursor: pointer;
+}
+.ai-send:hover {
+  opacity: 0.9;
+}
+/* 空闲态:显示发送图标(纸飞机) */
+.ai-send:not(.stop)::before {
+  content: '➤';
+  font-size: 14px;
+}
+.ai-send.stop {
+  background: var(--ui-danger);
+}
+
+/* 选中浮动按钮 */
+#ai-fab {
+  position: fixed;
+  z-index: 50;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 14px;
+  background: var(--ui-accent);
+  color: var(--ui-accent-fg);
+  font: 12px var(--ui-font);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+#ai-fab[hidden] {
+  display: none;
+}
+#ai-fab:hover {
+  opacity: 0.92;
+}

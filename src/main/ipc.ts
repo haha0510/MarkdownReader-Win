@@ -3,9 +3,10 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron'
 import type { IpcMainInvokeEvent, MenuItemConstructorOptions, OpenDialogOptions } from 'electron'
 import path from 'path'
 import { IPC } from '@shared/ipc'
-import type { FindOptions } from '@shared/ipc'
+import type { AiRequest, FindOptions } from '@shared/ipc'
 import type { PopupItem, SessionState, Settings } from '@shared/types'
 import * as files from './files'
+import { cancelAi, streamAi, testAi } from './ai'
 import { exportPdf } from './pdf'
 import { allowRoot } from './protocol'
 import { getSession, getSettings, setSession, setSettings } from './store'
@@ -73,6 +74,10 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.FsSearch, (_e, roots: string[], query: string) =>
     files.searchContent(Array.isArray(roots) ? roots : [], String(query ?? ''))
   )
+  // AI 流式转发
+  ipcMain.handle(IPC.AiStream, (e, req: AiRequest) => streamAi(e.sender, req))
+  ipcMain.handle(IPC.AiCancel, (_e, id: string) => cancelAi(String(id ?? '')))
+  ipcMain.handle(IPC.AiTest, (_e, cfg: { baseUrl: string; apiKey: string; model: string }) => testAi(cfg))
   ipcMain.handle(IPC.FsDelete, (_e, p: string) => files.deleteEntry(p))
   ipcMain.handle(IPC.FsExists, (_e, p: string) => files.exists(p))
   ipcMain.handle(IPC.FsWatch, (_e, roots: string[] | null) =>

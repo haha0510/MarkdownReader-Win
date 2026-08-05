@@ -17,6 +17,7 @@
         <div id="titlebar-title"><span id="doc-title"></span><span id="doc-dirty" hidden>●</span></div>
         <div id="titlebar-right">
           <div id="btn-mode" class="mode-seg"></div>
+          <button id="btn-ai" class="tb-btn" title=""></button>
           <button id="btn-theme" class="tb-btn" title=""></button>
           <button id="btn-settings" class="tb-btn" title=""></button>
           <button id="btn-toggle-outline" class="tb-btn" title=""></button>
@@ -35,6 +36,7 @@
           <div id="viewer-scroll">
             <article id="viewer" class="markdown-body"></article>
           </div>
+          <div id="translate-scroll" hidden><article id="translate-body" class="markdown-body"></article></div>
           <div id="editor" hidden></div>
         </section>
         <div id="resize-right" class="resize-handle"></div>
@@ -45,6 +47,8 @@
       </main>
     </div>
     <div id="findbar" hidden></div>
+    <aside id="ai-panel" hidden></aside>
+    <button id="ai-fab" hidden></button>
     <div id="palette-overlay" hidden><div id="palette"></div></div>
     <div id="settings-overlay" hidden><div id="settings-modal"></div></div>
     <div id="toast-container"></div>

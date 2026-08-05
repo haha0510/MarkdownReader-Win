@@ -7,6 +7,9 @@ export type BusEvent =
   | 'open-folder' // (path: string) 请求打开(追加)目录
   | 'remove-folder' // (path: string) 从工作区移除单个根目录
   | 'close-folder' // () 关闭全部目录,回到欢迎页
+  | 'show-ai' // () 打开/切换 AI 面板
+  | 'ai-ask-selection' // (text: string) 选中文字 → 打开 AI 面板提问
+  | 'toggle-translate' // () 切换翻译对照视图
   | 'show-search' // () 全文搜索浮层
   | 'close-active-tab' // () 关闭当前标签
   | 'cycle-tab' // () 切到下一个标签

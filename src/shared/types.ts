@@ -53,6 +53,14 @@ export interface Settings {
   editorWordWrap: boolean
   /** 自动保存:编辑停顿后自动写回本地文件 */
   autoSave: boolean
+  /** AI 服务地址(OpenAI 兼容,如 https://api.deepseek.com) */
+  aiBaseUrl: string
+  /** AI API Key */
+  aiApiKey: string
+  /** AI 模型名(如 deepseek-chat / gpt-4o-mini) */
+  aiModel: string
+  /** 翻译目标语言 */
+  aiTargetLang: string
 }
 
 export interface WindowBounds {
@@ -95,7 +103,11 @@ export const DEFAULT_SETTINGS: Settings = {
   language: 'auto',
   plantumlServer: 'https://www.plantuml.com/plantuml',
   editorWordWrap: true,
-  autoSave: true
+  autoSave: true,
+  aiBaseUrl: '',
+  aiApiKey: '',
+  aiModel: 'deepseek-chat',
+  aiTargetLang: '中文'
 }
 
 export const DEFAULT_SESSION: SessionState = {
@@ -155,3 +167,4 @@ export type MenuAction =
   | 'close-tab'
   | 'next-tab'
   | 'search'
+  | 'toggle-ai'

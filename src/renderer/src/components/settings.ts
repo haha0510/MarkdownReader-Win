@@ -227,6 +227,89 @@ export function initSettingsUI(): void {
       )
     )
 
+    // ── AI 助手 ──
+    body.appendChild(section(t('win.settingsAi')))
+
+    // 文本输入辅助:即时保存到指定 settings 键(复用 apply 保存机制)
+    function aiText(value: string, placeholder: string, onChange: (v: string) => void): HTMLInputElement {
+      const i = document.createElement('input')
+      i.type = 'text'
+      i.placeholder = placeholder
+      i.value = value
+      i.spellcheck = false
+      i.addEventListener('change', () => onChange(i.value.trim()))
+      return i
+    }
+
+    const aiBase = aiText(s.aiBaseUrl, 'https://api.deepseek.com', (v) => apply({ aiBaseUrl: v }))
+    body.appendChild(row(t('win.settingsAiBaseUrl'), aiBase))
+
+    // 密钥:type=password(panels.css 仅样式化 text/number,这里补内联样式与其它输入一致)
+    const aiKey = document.createElement('input')
+    aiKey.type = 'password'
+    aiKey.value = s.aiApiKey
+    aiKey.spellcheck = false
+    aiKey.autocomplete = 'off'
+    aiKey.style.cssText =
+      'width:100%;height:28px;padding:0 8px;font-size:13px;font-family:inherit;color:var(--ui-fg);background:var(--ui-bg);border:1px solid var(--ui-border);border-radius:6px;outline:none'
+    aiKey.addEventListener('change', () => apply({ aiApiKey: aiKey.value.trim() }))
+    body.appendChild(row(t('win.settingsAiKey'), aiKey))
+
+    const aiModel = aiText(s.aiModel, 'deepseek-chat', (v) => apply({ aiModel: v }))
+    body.appendChild(row(t('win.settingsAiModel'), aiModel))
+
+    const aiLang = aiText(s.aiTargetLang, '', (v) => apply({ aiTargetLang: v }))
+    body.appendChild(row(t('win.settingsAiTargetLang'), aiLang))
+
+    // 测试连接:用输入框实时值组装 cfg(而非旧 store)
+    const testBtn = document.createElement('button')
+    testBtn.className = 'st-reset'
+    testBtn.type = 'button'
+    testBtn.textContent = t('win.settingsAiTest')
+    const testStatus = document.createElement('span')
+    testStatus.className = 'st-hint'
+    const testWrap = document.createElement('div')
+    testWrap.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:8px'
+    testWrap.append(testBtn, testStatus)
+    testBtn.addEventListener('click', () => {
+      const cfg = {
+        baseUrl: aiBase.value.trim(),
+        apiKey: aiKey.value.trim(),
+        model: aiModel.value.trim()
+      }
+      testBtn.disabled = true
+      testBtn.textContent = t('win.aiThinking')
+      testStatus.textContent = ''
+      testStatus.style.color = ''
+      void api
+        .aiTest(cfg)
+        .then((r) => {
+          if (r.ok) {
+            testStatus.textContent = t('win.settingsAiTestOk')
+            testStatus.style.color = 'var(--ui-accent)'
+          } else {
+            testStatus.textContent = t('win.settingsAiTestFail', { msg: r.error ?? '' })
+            testStatus.style.color = 'var(--ui-danger)'
+          }
+        })
+        .catch((e: unknown) => {
+          testStatus.textContent = t('win.settingsAiTestFail', { msg: e instanceof Error ? e.message : String(e) })
+          testStatus.style.color = 'var(--ui-danger)'
+        })
+        .finally(() => {
+          testBtn.disabled = false
+          testBtn.textContent = t('win.settingsAiTest')
+        })
+    })
+    body.appendChild(row('', testWrap))
+
+    // 分区提示
+    const aiHint = document.createElement('div')
+    aiHint.className = 'st-hint muted'
+    aiHint.style.cssText = 'padding:4px 0 8px'
+    aiHint.textContent = t('win.settingsAiHint')
+    body.appendChild(aiHint)
+
     // 底部:重置默认
     const footer = document.createElement('div')
     footer.className = 'st-footer'

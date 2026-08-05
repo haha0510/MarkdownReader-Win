@@ -25,6 +25,12 @@ export const IPC = {
   FsMove: 'fs:move',
   /** invoke (roots: string[], query: string) → SearchHit[](全文搜索,上限 200 条) */
   FsSearch: 'fs:search',
+  /** invoke (req: AiRequest) → { ok: boolean; error?: string };增量经 EvAiDelta 推送 */
+  AiStream: 'ai:stream',
+  /** invoke (id: string) → void(中止流式) */
+  AiCancel: 'ai:cancel',
+  /** invoke ({ baseUrl, apiKey, model }) → { ok: boolean; error?: string }(连接测试) */
+  AiTest: 'ai:test',
   /** invoke (path: string) → void(移入回收站) */
   FsDelete: 'fs:delete',
   /** invoke (path: string) → boolean */
@@ -84,8 +90,30 @@ export const IPC = {
   /** ({ activeMatchOrdinal, matches }: FindResult) */
   EvFindResult: 'ev:find:result',
   /** (dark: boolean) 系统明暗切换(theme='auto' 时用) */
-  EvSystemThemeChanged: 'ev:systemTheme'
+  EvSystemThemeChanged: 'ev:systemTheme',
+  /** ({ id, text }: AiDelta) AI 流式增量 */
+  EvAiDelta: 'ev:ai:delta'
 } as const
+
+/** AI 对话消息 */
+export interface AiMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/** AI 流式请求(主进程读设置里的 baseUrl/apiKey/model) */
+export interface AiRequest {
+  /** 前端生成的唯一 id,用于路由增量与取消 */
+  id: string
+  system?: string
+  messages: AiMessage[]
+}
+
+/** AI 流式增量 */
+export interface AiDelta {
+  id: string
+  text: string
+}
 
 export interface FindOptions {
   forward?: boolean
@@ -120,6 +148,14 @@ export interface RendererApi {
   moveEntry(srcPath: string, destDir: string): Promise<{ path: string }>
   /** 全文搜索所有根目录下 md 文件内容 */
   searchContent(roots: string[], query: string): Promise<SearchHit[]>
+  /** AI 流式生成;增量经 onAiDelta 回调,Promise 在结束时 resolve */
+  aiStream(req: AiRequest): Promise<{ ok: boolean; error?: string }>
+  /** 中止指定 AI 流式请求 */
+  aiCancel(id: string): Promise<void>
+  /** 测试 AI 连接 */
+  aiTest(cfg: { baseUrl: string; apiKey: string; model: string }): Promise<{ ok: boolean; error?: string }>
+  /** 订阅 AI 流式增量 */
+  onAiDelta(cb: (d: AiDelta) => void): void
   deleteEntry(path: string): Promise<void>
   exists(path: string): Promise<boolean>
   watch(roots: string[] | null): Promise<void>

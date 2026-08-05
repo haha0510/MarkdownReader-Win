@@ -21,6 +21,8 @@ import { initEditor } from '@/components/editor'
 import { initFindbar } from '@/components/findbar'
 import { initTabs } from '@/components/tabs'
 import { initSearch } from '@/components/search'
+import { initAiPanel } from '@/components/ai-panel'
+import { initTranslate } from '@/components/translate'
 import { initKeyboard } from '@/keyboard'
 import { initMermaidModule } from '@/markdown/mermaid'
 
@@ -270,6 +272,9 @@ function dispatchAction(action: MenuAction): void {
     case 'search':
       bus.emit('show-search')
       break
+    case 'toggle-ai':
+      bus.emit('show-ai')
+      break
   }
 }
 
@@ -432,6 +437,8 @@ async function bootstrap(): Promise<void> {
   initFindbar()
   initTabs()
   initSearch()
+  initAiPanel()
+  initTranslate()
   initKeyboard()
   initMermaidModule()
 
