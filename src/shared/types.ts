@@ -42,7 +42,7 @@ export interface Settings {
   fontSize: number
   /** 正文行高(倍数) */
   lineHeight: number
-  /** 正文最大宽度 px;0 = 不限 */
+  /** 正文最大宽度 px;0 = 跟随可用内容区 */
   contentWidth: number
   /** 编辑器(原文模式)字号 px */
   editorFontSize: number
@@ -98,7 +98,7 @@ export const DEFAULT_SETTINGS: Settings = {
   darkTheme: 'buddy-dark',
   fontSize: 16,
   lineHeight: 1.7,
-  contentWidth: 820,
+  contentWidth: 0,
   editorFontSize: 14,
   language: 'auto',
   plantumlServer: 'https://www.plantuml.com/plantuml',

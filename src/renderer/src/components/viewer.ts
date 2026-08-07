@@ -26,6 +26,7 @@ export function initViewer(): void {
     root.setProperty('--md-font-size', `${s.settings.fontSize * s.zoom}px`)
     root.setProperty('--editor-font-size', `${s.settings.editorFontSize * s.zoom}px`)
     root.setProperty('--md-line-height', String(s.settings.lineHeight))
+    // 0 = 跟随窗口;固定阅读宽度仍可在设置中主动选择
     root.setProperty(
       '--md-max-width',
       s.settings.contentWidth === 0 ? '100%' : `${s.settings.contentWidth}px`

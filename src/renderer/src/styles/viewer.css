@@ -10,6 +10,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  max-width: calc(100vw - 16px);
   padding: 6px 8px;
   background: var(--ui-popover-bg);
   border: 1px solid var(--ui-border);
@@ -22,11 +23,24 @@
 }
 /* 大纲面板可见时右移,避免浮层盖住大纲 */
 html[data-outline='true'] #findbar {
-  right: calc(var(--outline-width, 220px) + 32px);
+  right: calc(clamp(160px, var(--outline-width, 220px), 24vw) + 32px);
+}
+
+@media (max-width: 1200px) {
+  html[data-translate='true'][data-outline='true'] #findbar {
+    right: 24px;
+  }
+}
+
+@media (max-width: 1040px) {
+  html[data-outline='true'] #findbar {
+    right: 24px;
+  }
 }
 
 #findbar .find-input {
-  width: 200px;
+  width: clamp(120px, 20vw, 200px);
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;

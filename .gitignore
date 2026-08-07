@@ -1,8 +1,8 @@
 node_modules/
 out/
 dist/
+*.tsbuildinfo
 *.log
 .DS_Store
-tests/.userdata/
+tests/.userdata*/
 tests/shots/
-tests/.userdata-packaged/

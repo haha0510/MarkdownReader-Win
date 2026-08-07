@@ -109,7 +109,7 @@
 }
 
 #sidebar {
-  width: var(--sidebar-width, 240px);
+  width: clamp(180px, var(--sidebar-width, 240px), 28vw);
   flex-shrink: 0;
   min-width: 0;
   display: flex;
@@ -125,7 +125,7 @@
 }
 
 #outline {
-  width: var(--outline-width, 220px);
+  width: clamp(160px, var(--outline-width, 220px), 24vw);
   flex-shrink: 0;
   min-width: 0;
   display: flex;
@@ -272,4 +272,54 @@ html[data-mode='rendered'] #editor {
 .welcome-recent-path {
   margin-left: 8px;
   font-size: 11px;
+}
+
+/* 中等窗口优先保证正文宽度;仅改变有效布局,不覆盖用户保存的面板偏好。 */
+@media (max-width: 1200px) {
+  html[data-translate='true'] #outline,
+  html[data-translate='true'] #resize-right,
+  html[data-translate='true'] #btn-toggle-outline {
+    display: none;
+  }
+}
+
+@media (max-width: 1040px) {
+  #outline,
+  #resize-right,
+  #btn-toggle-outline {
+    display: none;
+  }
+}
+
+@media (max-width: 1000px) {
+  .mode-seg {
+    margin-right: 2px;
+  }
+  .mode-seg .seg {
+    gap: 0;
+    padding: 0 7px;
+  }
+  .mode-seg .seg-label {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  html[data-translate='true'] #sidebar,
+  html[data-translate='true'] #resize-left,
+  html[data-translate='true'] #btn-toggle-sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  #titlebar-title {
+    display: none;
+  }
+  #titlebar {
+    padding-left: 4px;
+  }
+  #titlebar-right {
+    gap: 0;
+  }
 }

@@ -1,5 +1,5 @@
 // 面板宽度拖拽 — #resize-left(侧栏 180–480)/ #resize-right(大纲 160–400)。
-// 拖动实时写 store + CSS 变量;pointerup 持久化到 session;双击恢复默认宽。
+// 拖动实时写 store + CSS 变量;动态保留正文最小宽度;pointerup 持久化到 session。
 import type { SessionState } from '@shared/types'
 import type { AppState } from '@/state'
 import { store } from '@/state'
@@ -20,6 +20,8 @@ const SPECS: HandleSpec[] = [
   { id: 'resize-right', key: 'outlineWidth', cssVar: '--outline-width', min: 160, max: 400, def: 220, dir: -1 }
 ]
 
+const MIN_CONTENT_WIDTH = 480
+
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, Math.round(v)))
 
 export function initResize(): void {
@@ -28,7 +30,10 @@ export function initResize(): void {
 
 function setup(spec: HandleSpec): void {
   const handle = document.getElementById(spec.id)
-  if (!handle) return
+  const panel = document.getElementById(spec.key === 'sidebarWidth' ? 'sidebar' : 'outline')
+  const otherPanel = document.getElementById(spec.key === 'sidebarWidth' ? 'outline' : 'sidebar')
+  const layout = document.getElementById('layout')
+  if (!handle || !panel || !otherPanel || !layout) return
 
   // 宽度补丁(sidebarWidth/outlineWidth 在 AppState 与 SessionState 中同名)
   const widthPatch = (w: number): Partial<AppState> & Partial<SessionState> =>
@@ -51,10 +56,18 @@ function setup(spec: HandleSpec): void {
   let startX = 0
   let startW = 0
 
+  const currentMax = (): number => {
+    const otherWidth = otherPanel.getBoundingClientRect().width
+    const handlesWidth = 8
+    const available = layout.clientWidth - otherWidth - handlesWidth - MIN_CONTENT_WIDTH
+    const responsiveMax = layout.clientWidth * (spec.key === 'sidebarWidth' ? 0.28 : 0.24)
+    return Math.max(spec.min, Math.min(spec.max, available, responsiveMax))
+  }
+
   handle.addEventListener('pointerdown', (e) => {
     dragging = true
     startX = e.clientX
-    startW = store.get()[spec.key]
+    startW = panel.getBoundingClientRect().width || store.get()[spec.key]
     handle.setPointerCapture(e.pointerId)
     handle.classList.add('dragging')
     document.body.classList.add('resizing')
@@ -62,7 +75,7 @@ function setup(spec: HandleSpec): void {
 
   handle.addEventListener('pointermove', (e) => {
     if (!dragging) return
-    const w = clamp(startW + spec.dir * (e.clientX - startX), spec.min, spec.max)
+    const w = clamp(startW + spec.dir * (e.clientX - startX), spec.min, currentMax())
     store.set(widthPatch(w))
   })
 

@@ -161,8 +161,8 @@ export function initSettingsUI(): void {
       row(tf('win.lineHeight', '行高', '行高', 'Line height'), numInput(s.lineHeight, 1.2, 2.6, 0.1, (v) => apply({ lineHeight: v })))
     )
 
-    // 渲染宽度:0 = 跟随窗口
-    const widths = [0, 680, 760, 820, 900, 1000, 1200]
+    // 渲染宽度:0 = 铺满内容区(默认);其余为固定上限,超宽屏可用来限制行长
+    const widths = [0, 680, 760, 820, 900, 1000, 1200, 1400, 1600]
     if (!widths.includes(s.contentWidth)) {
       widths.push(s.contentWidth)
       widths.sort((a, b) => a - b)

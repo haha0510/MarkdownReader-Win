@@ -9,6 +9,10 @@ let settings: Settings | null = null
 let sessionState: SessionState | null = null
 let sessionTimer: NodeJS.Timeout | null = null
 
+/** 仅用于持久化文件的内部迁移标记,不暴露给渲染器 Settings。 */
+const SETTINGS_LAYOUT_VERSION = 1
+type StoredSettings = Partial<Settings> & { _layoutVersion?: number }
+
 function fileOf(name: string): string {
   return path.join(app.getPath('userData'), name)
 }
@@ -40,15 +44,36 @@ function writeJsonAtomic(name: string, data: unknown): void {
   }
 }
 
+function loadSettings(): Settings {
+  let parsed: StoredSettings | null = null
+  try {
+    const raw: unknown = JSON.parse(fs.readFileSync(fileOf('settings.json'), 'utf8'))
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) parsed = raw as StoredSettings
+  } catch {
+    // 首次运行或文件损坏 → 默认值
+  }
+
+  const layoutVersion = parsed?._layoutVersion ?? 0
+  const { _layoutVersion: _ignored, ...storedValues } = parsed ?? {}
+  const loaded: Settings = { ...DEFAULT_SETTINGS, ...storedValues }
+
+  // v0.3 之前默认渲染宽度为 820px。只迁移一次,避免以后误伤用户主动选择的 820px。
+  if (parsed && layoutVersion < SETTINGS_LAYOUT_VERSION) {
+    if (loaded.contentWidth === 820) loaded.contentWidth = 0
+    writeJsonAtomic('settings.json', { ...loaded, _layoutVersion: SETTINGS_LAYOUT_VERSION })
+  }
+  return loaded
+}
+
 export function getSettings(): Settings {
-  if (!settings) settings = loadJson('settings.json', DEFAULT_SETTINGS)
+  if (!settings) settings = loadSettings()
   return settings
 }
 
 // 浅合并 patch 并立即持久化(设置修改低频)
 export function setSettings(patch: Partial<Settings>): Settings {
   settings = { ...getSettings(), ...patch }
-  writeJsonAtomic('settings.json', settings)
+  writeJsonAtomic('settings.json', { ...settings, _layoutVersion: SETTINGS_LAYOUT_VERSION })
   return settings
 }
 

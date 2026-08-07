@@ -4,8 +4,6 @@
 >
 > [davidhoo/MarkdownReader](https://github.com/davidhoo/MarkdownReader)(macOS)的 Windows 移植版,Electron + TypeScript 实现。
 
-![screenshot](tests/shots/01-rendered.png)
-
 ## 功能
 
 | 功能 | 说明 |
