@@ -9,7 +9,7 @@ import * as files from './files'
 import { cancelAi, streamAi, testAi } from './ai'
 import { exportPdf } from './pdf'
 import { allowRoot } from './protocol'
-import { getSession, getSettings, setSession, setSettings } from './store'
+import { getData, getSession, getSettings, setData, setSession, setSettings } from './store'
 import { setWatchRoots } from './watcher'
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
@@ -93,6 +93,15 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.SessionGet, () => getSession())
   ipcMain.handle(IPC.SessionSet, (_e, patch: Partial<SessionState>) => {
     setSession(patch)
+  })
+
+  // ── 通用数据持久化(name 白名单格式校验,防路径注入)──
+  const DATA_NAME = /^[a-z][a-z0-9-]*$/
+  ipcMain.handle(IPC.DataGet, (_e, name: string) =>
+    typeof name === 'string' && DATA_NAME.test(name) ? getData(name) : null
+  )
+  ipcMain.handle(IPC.DataSet, (_e, name: string, value: unknown) => {
+    if (typeof name === 'string' && DATA_NAME.test(name)) setData(name, value)
   })
 
   // ── PDF 导出 ──

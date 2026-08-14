@@ -52,6 +52,18 @@
 .ai-hbtn:hover {
   background: var(--ui-hover);
 }
+/* 小图标按钮(历史 / 新对话) */
+.ai-hbtn.ai-icon {
+  width: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-fg-muted);
+}
+.ai-hbtn.ai-icon:hover {
+  color: var(--ui-fg);
+}
 .ai-hbtn.ai-close {
   padding: 0 8px;
   border-color: transparent;
@@ -213,4 +225,101 @@
 }
 #ai-fab:hover {
   opacity: 0.92;
+}
+
+/* ── 历史列表视图 ── */
+.ai-history {
+  flex: 1;
+  overflow: auto;
+  padding: 8px;
+}
+.ai-history[hidden] {
+  display: none;
+}
+.ai-history-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ui-fg-muted);
+}
+.ai-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+}
+.ai-hist-row:hover {
+  background: var(--ui-hover);
+}
+.ai-hist-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ui-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ai-hist-kind {
+  flex: none;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: var(--ui-selection);
+  color: var(--ui-fg-muted);
+}
+.ai-hist-time {
+  flex: none;
+  font-size: 11px;
+  color: var(--ui-fg-muted);
+  white-space: nowrap;
+}
+.ai-hist-del {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-fg-muted);
+  font-size: 12px;
+  cursor: pointer;
+  visibility: hidden;
+}
+.ai-hist-row:hover .ai-hist-del {
+  visibility: visible;
+}
+.ai-hist-del:hover {
+  color: var(--ui-danger);
+  background: var(--ui-hover);
+}
+
+/* ── 正文批注标签(选中即问)── */
+.ai-note-tag {
+  display: inline-block;
+  min-width: 14px;
+  height: 14px;
+  line-height: 14px;
+  padding: 0 2px;
+  margin-left: 2px;
+  border-radius: 7px;
+  background: var(--ui-accent);
+  color: var(--ui-accent-fg);
+  font-size: 9px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  vertical-align: super;
+  transition: transform 0.12s ease;
+}
+.ai-note-tag:hover {
+  transform: scale(1.2);
+}
+.ai-note-mark {
+  background: var(--md-mark-bg);
+  color: inherit;
+  border-radius: 2px;
 }

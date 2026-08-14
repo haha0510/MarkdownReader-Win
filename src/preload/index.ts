@@ -25,6 +25,8 @@ const api: RendererApi = {
   watch: (roots: string[] | null) => ipcRenderer.invoke(IPC.FsWatch, roots),
   reveal: (path: string) => ipcRenderer.invoke(IPC.FsReveal, path),
 
+  dataGet: (name: string) => ipcRenderer.invoke(IPC.DataGet, name),
+  dataSet: (name: string, value: unknown) => ipcRenderer.invoke(IPC.DataSet, name, value),
   getSettings: () => ipcRenderer.invoke(IPC.SettingsGet),
   setSettings: (patch: Partial<Settings>) => ipcRenderer.invoke(IPC.SettingsSet, patch),
   getSession: () => ipcRenderer.invoke(IPC.SessionGet),

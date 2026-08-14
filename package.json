@@ -1,7 +1,7 @@
 {
   "name": "markdown-reader-win",
   "productName": "Markdown Reader",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "不是又一个全能编辑器,只是一个安静的 Markdown 阅读器 — Windows 版",
   "main": "./out/main/index.js",
   "author": "MarkdownReader-Win",

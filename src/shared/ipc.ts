@@ -78,6 +78,11 @@ export const IPC = {
   /** send-only:渲染器初始化完毕,可接收 EvOpenPath 等推送 */
   RendererReady: 'renderer:ready',
 
+  /** invoke (name: string) → unknown | null(通用数据读取,userData/data-<name>.json) */
+  DataGet: 'data:get',
+  /** invoke (name: string, value: unknown) → void(通用数据写入,去抖 300ms 原子写) */
+  DataSet: 'data:set',
+
   // ── 主进程 → 渲染器 推送 ──
   /** (trees: FileNode[]) 监控目录结构变化后的全量新树数组(与 watch 传入的 roots 顺序一致) */
   EvTreeChanged: 'ev:fs:treeChanged',
@@ -160,6 +165,10 @@ export interface RendererApi {
   exists(path: string): Promise<boolean>
   watch(roots: string[] | null): Promise<void>
   reveal(path: string): Promise<void>
+  /** 通用数据读取(name 须匹配 /^[a-z][a-z0-9-]*$/,无数据返回 null) */
+  dataGet(name: string): Promise<unknown | null>
+  /** 通用数据写入(去抖 300ms,退出时 flush) */
+  dataSet(name: string, value: unknown): Promise<void>
   getSettings(): Promise<Settings>
   setSettings(patch: Partial<Settings>): Promise<Settings>
   getSession(): Promise<SessionState>

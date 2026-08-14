@@ -100,11 +100,47 @@ export function setSession(patch: Partial<SessionState>): void {
   }, 300)
 }
 
-// 退出前同步冲刷未写入的 session
+// ── 通用数据持久化(userData/data-<name>.json,渲染器经 data:get/data:set 使用)──
+const dataCache = new Map<string, unknown>()
+const dataTimers = new Map<string, NodeJS.Timeout>()
+
+/** 读取通用数据;不存在/损坏返回 null。首次读取后缓存(写入方即渲染器,单一来源)。 */
+export function getData(name: string): unknown {
+  if (dataCache.has(name)) return dataCache.get(name) ?? null
+  try {
+    const raw = fs.readFileSync(fileOf(`data-${name}.json`), 'utf8')
+    const parsed: unknown = JSON.parse(raw)
+    dataCache.set(name, parsed)
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+/** 写入通用数据:内存立即生效,写盘去抖 300ms(与 session 相同模式) */
+export function setData(name: string, value: unknown): void {
+  dataCache.set(name, value)
+  const prev = dataTimers.get(name)
+  if (prev) clearTimeout(prev)
+  dataTimers.set(
+    name,
+    setTimeout(() => {
+      dataTimers.delete(name)
+      writeJsonAtomic(`data-${name}.json`, dataCache.get(name))
+    }, 300)
+  )
+}
+
+// 退出前同步冲刷未写入的 session 与通用数据
 export function flushStore(): void {
   if (sessionTimer) {
     clearTimeout(sessionTimer)
     sessionTimer = null
     if (sessionState) writeJsonAtomic('session.json', sessionState)
   }
+  for (const [name, timer] of dataTimers) {
+    clearTimeout(timer)
+    writeJsonAtomic(`data-${name}.json`, dataCache.get(name))
+  }
+  dataTimers.clear()
 }

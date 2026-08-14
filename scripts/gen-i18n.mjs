@@ -25,6 +25,28 @@ const winKeys = {
   },
   'win.aiError': { zhHans: 'AI 请求失败:{msg}', zhHant: 'AI 請求失敗:{msg}', en: 'AI request failed: {msg}' },
   'win.aiSelectionContext': { zhHans: '选中内容', zhHant: '選取內容', en: 'Selected text' },
+  'win.aiHistory': { zhHans: '历史对话', zhHant: '歷史對話', en: 'History' },
+  'win.aiNewChat': { zhHans: '新对话', zhHant: '新對話', en: 'New chat' },
+  'win.aiHistoryEmpty': { zhHans: '暂无历史对话', zhHant: '暫無歷史對話', en: 'No conversations yet' },
+  'win.aiHistoryDeleteConfirm': {
+    zhHans: '确定删除这条对话记录吗？',
+    zhHant: '確定刪除這條對話記錄嗎？',
+    en: 'Delete this conversation?'
+  },
+  'win.aiKindAsk': { zhHans: '选中', zhHant: '選取', en: 'Ask' },
+  'win.aiKindSummary': { zhHans: '摘要', zhHant: '摘要', en: 'Summary' },
+  'win.aiKindTranslate': { zhHans: '翻译', zhHant: '翻譯', en: 'Translate' },
+  'win.aiKindChat': { zhHans: '对话', zhHant: '對話', en: 'Chat' },
+  'win.aiNoteDelete': { zhHans: '删除批注', zhHant: '刪除批註', en: 'Delete annotation' },
+  'win.aiNoteDeleteConfirm': {
+    zhHans: '确定删除这条批注吗？',
+    zhHant: '確定刪除這條批註嗎？',
+    en: 'Delete this annotation?'
+  },
+  'win.aiTimeJustNow': { zhHans: '刚刚', zhHant: '剛剛', en: 'just now' },
+  'win.aiTimeMinutesAgo': { zhHans: '{n} 分钟前', zhHant: '{n} 分鐘前', en: '{n} min ago' },
+  'win.aiTimeHoursAgo': { zhHans: '{n} 小时前', zhHant: '{n} 小時前', en: '{n} h ago' },
+  'win.aiTimeDaysAgo': { zhHans: '{n} 天前', zhHant: '{n} 天前', en: '{n} d ago' },
   'win.aiTranslating': { zhHans: '正在翻译…', zhHant: '正在翻譯…', en: 'Translating…' },
   'win.aiOriginal': { zhHans: '原文', zhHant: '原文', en: 'Original' },
   'win.aiTranslation': { zhHans: '译文', zhHant: '譯文', en: 'Translation' },
