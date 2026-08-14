@@ -275,3 +275,19 @@ export function renderMarkdown(
   const html = postProcess(rawHtml, opts.docPath)
   return { html, outline }
 }
+
+/**
+ * 仅提取大纲,不产出 HTML(编辑模式实时大纲用)。
+ * markdown-it-anchor 注册的是 core 规则(core.ruler.push('anchor')),md.parse 即触发其
+ * callback(已对 node_modules 实测:parse 触发、id 去重后缀一致、去重状态按次重建),
+ * 因此 id 与 renderMarkdown 对同一文本的产出(含 -1/-2 去重后缀)严格一致;
+ * fence 等渲染器规则不执行,plantuml server 等渲染期状态不受影响。
+ */
+export function extractOutline(src: string): OutlineItem[] {
+  const md = getMd()
+  outlineCollector = []
+  md.parse(src, {})
+  const outline = outlineCollector
+  outlineCollector = [] // 断开与模块态的别名,避免后续渲染误改返回值
+  return outline
+}

@@ -11,6 +11,7 @@ import { tags } from '@lezer/highlight'
 import { store } from '@/state'
 import { bus } from '@/bus'
 import { t } from '@/i18n'
+import { extractOutline } from '@/markdown/render'
 
 let view: EditorView | null = null
 
@@ -178,6 +179,65 @@ function scheduleAutoSave(): void {
   }, AUTO_SAVE_DELAY)
 }
 
+// ── 编辑 → 大纲实时同步:内容变化去抖后重提大纲(extractOutline 与渲染 id 一致)──
+const OUTLINE_REFRESH_DELAY = 600
+let outlineTimer: number | null = null
+
+function clearOutlineTimer(): void {
+  if (outlineTimer !== null) {
+    window.clearTimeout(outlineTimer)
+    outlineTimer = null
+  }
+}
+
+function scheduleOutlineRefresh(): void {
+  clearOutlineTimer()
+  outlineTimer = window.setTimeout(() => {
+    outlineTimer = null
+    if (view) store.set({ outline: extractOutline(view.state.doc.toString()) })
+  }, OUTLINE_REFRESH_DELAY)
+}
+
+// ── 程序性滚动期间抑制编辑器 scrollspy(机制参考 viewer:scrollend 解除 + 1000ms 兜底)──
+let suppressUntil = 0
+let suppressTimer: number | null = null
+
+function releaseSuppress(): void {
+  suppressUntil = 0
+  if (suppressTimer !== null) {
+    window.clearTimeout(suppressTimer)
+    suppressTimer = null
+  }
+}
+
+/**
+ * 开启抑制窗口。编辑器滚动是瞬时的,scrollend 可能先于 scroll 监听排队的 rAF 回调到达,
+ * 因此 scrollend 后推迟一帧再解除,保证已排队的 scrollspy 回调仍处于抑制期。
+ */
+function suppressSpy(): void {
+  suppressUntil = Date.now() + 1000
+  if (suppressTimer !== null) window.clearTimeout(suppressTimer)
+  suppressTimer = window.setTimeout(releaseSuppress, 1000)
+  view?.scrollDOM.addEventListener('scrollend', () => requestAnimationFrame(releaseSuppress), {
+    once: true
+  })
+}
+
+/** 按大纲 id 定位编辑器:光标置于标题行首并滚到视口顶部(大纲中无此 id 则原位不动) */
+function scrollEditorToHeading(id: string): void {
+  if (!view) return
+  const item = store.get().outline.find((it) => it.id === id)
+  if (!item) return
+  // OutlineItem.line 为 0 基,CM 行号 1 基;行数可能已被编辑改变,越界时收敛到文末
+  const ln = Math.min(item.line + 1, view.state.doc.lines)
+  const pos = view.state.doc.line(ln).from
+  suppressSpy() // 程序性滚动不让 scrollspy 改写 activeHeadingId
+  view.dispatch({
+    selection: { anchor: pos },
+    effects: EditorView.scrollIntoView(pos, { y: 'start', yMargin: 12 })
+  })
+}
+
 /** 每文件全新状态(撤销栈随之重置) */
 function freshState(doc: string): EditorState {
   return EditorState.create({
@@ -209,6 +269,7 @@ function freshState(doc: string): EditorState {
           store.set({ content: u.state.doc.toString(), dirty: true })
           const s = store.get()
           if (s.settings.autoSave && s.currentFile) scheduleAutoSave()
+          scheduleOutlineRefresh() // 用户编辑 → 去抖更新大纲(新增/删除标题实时反映)
         }
       })
     ]
@@ -246,11 +307,14 @@ export function initEditor(): void {
 
   view = new EditorView({ state: freshState(store.get().content), parent })
 
-  // 文件载入(含外部修改重载)→ 重建状态(撤销栈重置);旧文件的待自动保存作废
+  // 文件载入(含外部修改重载)→ 重建状态(撤销栈重置);旧文件的待自动保存/待大纲更新作废
   bus.on('file-loaded', () => {
     clearAutoSaveTimer()
+    clearOutlineTimer()
     if (!view) return
     applyingProgrammatic = true
+    // setState 会把滚动位置重置到顶部:抑制由此触发的 scrollspy,保留跨重载的 activeHeadingId
+    suppressSpy()
     view.setState(freshState(store.get().content))
     applyingProgrammatic = false
   })
@@ -263,13 +327,53 @@ export function initEditor(): void {
     if (!s.autoSave && prev.autoSave) clearAutoSaveTimer()
   })
 
-  // 切到 raw:重新测量(display:none 期间尺寸为 0)并聚焦
+  // 切到 raw:重新测量(display:none 期间尺寸为 0)并聚焦;定位到渲染侧的活跃标题,
+  // 保持阅读位置连续。无活跃标题(文档顶部)时保持编辑器原位。
   store.on('mode', (mode) => {
-    if (mode === 'raw' && view) {
-      view.requestMeasure()
-      view.focus()
-    }
+    if (mode !== 'raw' || !view) return
+    view.requestMeasure()
+    view.focus()
+    const id = store.get().activeHeadingId
+    if (!id) return
+    // 等一帧:确保 #editor 已可见、CM 可测量后再定位
+    requestAnimationFrame(() => {
+      if (store.get().mode === 'raw') scrollEditorToHeading(id)
+    })
   })
+
+  // 大纲点击(编辑模式):跳到对应标题行;渲染模式不处理(viewer 已有)
+  bus.on('scroll-to-heading', (payload) => {
+    const id = typeof payload === 'string' ? payload : ''
+    if (!id || !view || store.get().mode !== 'raw') return
+    store.set({ activeHeadingId: id })
+    scrollEditorToHeading(id)
+    view.focus()
+  })
+
+  // ── 编辑滚动 → 大纲联动(rAF 节流):视口顶部行之前(含)的最后一个标题为活跃项 ──
+  let spyRafPending = false
+  view.scrollDOM.addEventListener(
+    'scroll',
+    () => {
+      if (spyRafPending) return
+      spyRafPending = true
+      requestAnimationFrame(() => {
+        spyRafPending = false
+        if (!view || store.get().mode !== 'raw') return
+        if (Date.now() < suppressUntil) return // 程序性滚动抑制期
+        // +6px 容差:程序定位后 scrollTop 恰落在标题块上沿,防像素级抖动误判为前一项
+        const block = view.lineBlockAtHeight(view.scrollDOM.scrollTop + 6)
+        const topLine = view.state.doc.lineAt(block.from).number - 1 // 转 0 基
+        let active: string | null = null
+        for (const it of store.get().outline) {
+          if (it.line <= topLine) active = it.id
+          else break // 大纲行号升序,可提前结束
+        }
+        store.set({ activeHeadingId: active }) // 位于首个标题之前 → null
+      })
+    },
+    { passive: true }
+  )
 
   bus.on('save-request', () => {
     // 手动保存立即写盘,取消待触发的自动保存(避免紧跟一次冗余写)

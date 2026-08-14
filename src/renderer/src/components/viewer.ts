@@ -90,8 +90,9 @@ export function initViewer(): void {
       })
   }
 
-  /** 渲染当前 store 内容;restoreFraction 非 null 时渲染完成后恢复滚动比例 */
-  const render = async (restoreFraction: number | null): Promise<void> => {
+  /** 渲染当前 store 内容;restoreFraction 非 null 时渲染完成后恢复滚动比例;
+   *  preferActiveHeading 时优先滚到活跃标题(模式切回渲染,承接编辑侧阅读位置) */
+  const render = async (restoreFraction: number | null, preferActiveHeading = false): Promise<void> => {
     const s = store.get()
     if (!s.currentFile) {
       // 无文件:清空视图
@@ -118,7 +119,11 @@ export function initViewer(): void {
         /* mermaid 失败不阻塞渲染流程 */
       }
       if (seq !== renderSeq) return // 已有更新的渲染在进行,放弃收尾
-      if (restoreFraction !== null) applyFraction(restoreFraction)
+      if (preferActiveHeading && scrollToActiveHeadingInstant()) {
+        // 已按活跃标题定位,不再做比例恢复
+      } else if (restoreFraction !== null) {
+        applyFraction(restoreFraction)
+      }
       bus.emit('rendered')
     } finally {
       rendersInFlight--
@@ -136,15 +141,24 @@ export function initViewer(): void {
     if (cf === null) void render(null)
   })
 
-  // 切回 rendered:内容变化过才重渲染;未变仅恢复滚动(display:none 会丢 scrollTop)
+  // 切回 rendered:优先定位到活跃标题(承接编辑侧滚动联动的阅读位置),无活跃标题
+  // 再按滚动比例恢复。内容变化过才重渲染;未变仅恢复滚动(display:none 会丢 scrollTop)
   store.on('mode', (mode) => {
-    if (mode !== 'rendered') return
+    if (mode !== 'rendered') {
+      // 离开渲染模式:立即冲刷待写的滚动比例——500ms 去抖若在隐藏后触发,
+      // 会被 clientHeight 守卫跳过,导致快速切换编辑时阅读位置丢失
+      if (saveTimer !== undefined) {
+        window.clearTimeout(saveTimer)
+        saveScrollFraction(true)
+      }
+      return
+    }
     const s = store.get()
     if (!s.currentFile) return
     const frac = lastFraction ?? sessionFraction()
     if (s.content !== lastRenderedContent || s.currentFile !== lastRenderedFile) {
-      void render(frac)
-    } else {
+      void render(frac, true)
+    } else if (!scrollToActiveHeadingInstant()) {
       applyFraction(frac)
     }
   })
@@ -164,6 +178,24 @@ export function initViewer(): void {
     }
   }
 
+  /**
+   * 瞬时滚到 store.activeHeadingId 对应标题(模式切回渲染时承接编辑侧位置);成功返回 true。
+   * 上方 render/mode 监听引用它——运行时机都在 init 完成后,声明顺序安全。
+   */
+  const scrollToActiveHeadingInstant = (): boolean => {
+    const id = store.get().activeHeadingId
+    if (!id) return false
+    const el = document.getElementById(id)
+    if (!el || !viewer.contains(el)) return false // 标题已不存在(内容变化)→ 走比例恢复
+    // 复用现有抑制:瞬时跳转产生的 scroll 事件不做 scrollspy,避免改写 activeHeadingId
+    suppressUntil = Date.now() + 1000
+    scrollEl.addEventListener('scrollend', releaseSuppress, { once: true })
+    if (suppressTimer !== undefined) window.clearTimeout(suppressTimer)
+    suppressTimer = window.setTimeout(releaseSuppress, 1000)
+    el.scrollIntoView({ block: 'start' }) // 瞬时定位,不用 smooth
+    return true
+  }
+
   const updateActiveHeading = (): void => {
     const headings = viewer.querySelectorAll<HTMLElement>(
       'h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]'
@@ -180,11 +212,12 @@ export function initViewer(): void {
     store.set({ activeHeadingId: active })
   }
 
-  const saveScrollFraction = (): void => {
+  /** allowHidden:离开渲染模式的冲刷场景,lastFraction 捕获于可见期仍可信,跳过 clientHeight 守卫 */
+  const saveScrollFraction = (allowHidden = false): void => {
     saveTimer = undefined
     const s = store.get()
     if (!s.currentFile || rendersInFlight > 0 || lastFraction === null) return
-    if (scrollEl.clientHeight === 0) return // 隐藏状态下的值不可信
+    if (!allowHidden && scrollEl.clientHeight === 0) return // 隐藏状态下的值不可信
     const scrollPositions: Record<string, number> = { ...s.session.scrollPositions }
     // 先删再插使当前文件位于插入序最末(最新);超过 100 条按插入序淘汰最早的键
     delete scrollPositions[s.currentFile]
