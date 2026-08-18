@@ -3,7 +3,7 @@
 import './styles/base.css'
 import './styles/layout.css'
 import type { DisplayMode, MenuAction, SessionState } from '@shared/types'
-import { MD_EXTENSIONS } from '@shared/types'
+import { isMarkdownPath, isTextPath } from '@shared/types'
 import { store } from '@/state'
 import { bus } from '@/bus'
 import { initI18n, t } from '@/i18n'
@@ -38,11 +38,8 @@ const dirname = (p: string): string => {
   // 盘根:'D:' 是"驱动器相对路径"(指向进程 CWD),必须带斜杠
   return /^[A-Za-z]:$/.test(d) ? `${d}/` : d
 }
-const isMarkdownPath = (p: string): boolean => {
-  const low = p.toLowerCase()
-  return MD_EXTENSIONS.some((ext) => low.endsWith(ext))
-}
-
+// md 与代码/文本文件同样走 open-file;仅目录走 open-folder
+const isOpenableFile = (p: string): boolean => isMarkdownPath(p) || isTextPath(p)
 /** 更新 store 内 session 镜像并把补丁持久化到主进程 */
 function patchSession(patch: Partial<SessionState>): void {
   store.set({ session: { ...store.get().session, ...patch } })
@@ -448,7 +445,7 @@ async function bootstrap(): Promise<void> {
 
   api.onOpenPath((raw) => {
     const p = norm(raw)
-    if (isMarkdownPath(p)) {
+    if (isOpenableFile(p)) {
       // 尚无根目录时先打开其父目录,再打开文件(已有根时不追加,保持工作区不变)
       if (store.get().rootDirs.length === 0) bus.emit('open-folder', dirname(p))
       bus.emit('open-file', p)
@@ -483,12 +480,12 @@ async function bootstrap(): Promise<void> {
       const raw = api.pathForFile(f)
       if (!raw) return
       const p = norm(raw)
-      if (isMarkdownPath(p)) {
+      if (isOpenableFile(p)) {
         // 与 onOpenPath 语义一致:尚无根目录时先带出该文件所在文件夹作上下文
         if (store.get().rootDirs.length === 0) bus.emit('open-folder', dirname(p))
         bus.emit('open-file', p)
       } else {
-        // 无扩展名视为目录(File 对象拿不到 isDirectory;交给 open-folder 流程报错兜底);拖入文件夹 = 追加
+        // 其余(多为无后缀)视为目录(File 对象拿不到 isDirectory;交给 open-folder 流程报错兜底);拖入文件夹 = 追加
         bus.emit('open-folder', p)
       }
     } catch {

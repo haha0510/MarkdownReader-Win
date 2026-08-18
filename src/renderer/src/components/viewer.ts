@@ -3,7 +3,8 @@
 import { store } from '@/state'
 import { bus } from '@/bus'
 import { t } from '@/i18n'
-import { renderMarkdown } from '@/markdown/render'
+import { isMarkdownPath } from '@shared/types'
+import { renderCodeFile, renderMarkdown } from '@/markdown/render'
 import { renderMermaidIn } from '@/markdown/mermaid'
 // @ts-ignore -- css 由 vite 打包
 import '@/styles/viewer.css'
@@ -104,6 +105,18 @@ export function initViewer(): void {
     const seq = ++renderSeq
     rendersInFlight++
     try {
+      // 非 markdown 文本文件:纯代码视图(hljs 高亮,无大纲、无 mermaid/图片管线)
+      if (!isMarkdownPath(s.currentFile)) {
+        viewer.innerHTML = renderCodeFile(s.content, s.currentFile)
+        lastRenderedContent = s.content
+        lastRenderedFile = s.currentFile
+        injectCopyButtons()
+        store.set({ outline: [] })
+        if (seq !== renderSeq) return
+        if (restoreFraction !== null) applyFraction(restoreFraction)
+        bus.emit('rendered')
+        return
+      }
       const { html, outline } = renderMarkdown(s.content, {
         docPath: s.currentFile,
         plantumlServer: s.settings.plantumlServer

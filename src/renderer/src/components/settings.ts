@@ -25,6 +25,18 @@ export function initSettingsUI(): void {
     void api.setSettings(patch).then((s) => store.set({ settings: s }))
   }
 
+  /** 重读全部根的目录树(showCodeFiles 等影响树内容的设置变化后调用;与 filetree 刷新按钮同路径) */
+  async function refreshTrees(): Promise<void> {
+    const roots = store.get().rootDirs
+    if (roots.length === 0) return
+    try {
+      const trees = await Promise.all(roots.map((r) => api.readTree(r)))
+      if (store.get().rootDirs === roots) store.set({ trees })
+    } catch {
+      /* 刷新失败:保留旧树,watcher 后续兜底 */
+    }
+  }
+
   // ── 控件构造 ──
   function row(label: string, control: HTMLElement, hint?: string): HTMLElement {
     const r = document.createElement('div')
@@ -213,6 +225,19 @@ export function initSettingsUI(): void {
     })
     body.appendChild(row(t('settingsGeneralLanguageTitle'), langSel))
 
+    // 显示代码/文本文件:切换后立即重读目录树
+    const showCode = document.createElement('input')
+    showCode.type = 'checkbox'
+    showCode.id = 'st-show-code'
+    showCode.checked = s.showCodeFiles
+    showCode.addEventListener('change', () => {
+      void api.setSettings({ showCodeFiles: showCode.checked }).then((ns) => {
+        store.set({ settings: ns })
+        void refreshTrees()
+      })
+    })
+    body.appendChild(row(t('win.showCodeFiles'), showCode, t('win.showCodeFilesHint')))
+
     const puml = document.createElement('input')
     puml.type = 'text'
     puml.placeholder = 'https://www.plantuml.com/plantuml'
@@ -319,6 +344,7 @@ export function initSettingsUI(): void {
     resetBtn.addEventListener('click', () => {
       void api.setSettings({ ...DEFAULT_SETTINGS }).then((ns) => {
         store.set({ settings: ns })
+        void refreshTrees() // showCodeFiles 可能被重置,树同步刷新
         render() // 重建控件反映默认值
       })
     })

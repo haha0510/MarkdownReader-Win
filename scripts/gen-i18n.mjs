@@ -125,6 +125,16 @@ const winKeys = {
     zhHant: '此目錄下沒有 Markdown 檔案',
     en: 'No Markdown files in this folder'
   },
+  'win.showCodeFiles': {
+    zhHans: '显示代码/文本文件',
+    zhHant: '顯示程式碼/文字檔案',
+    en: 'Show code/text files'
+  },
+  'win.showCodeFilesHint': {
+    zhHans: '在目录树中显示 .c/.py/.json 等代码与纯文本文件',
+    zhHant: '在目錄樹中顯示 .c/.py/.json 等程式碼與純文字檔案',
+    en: 'Show source code and plain text files in the file tree'
+  },
   'win.emptyOutline': { zhHans: '暂无标题', zhHant: '暫無標題', en: 'No headings' },
   'win.paletteNoResults': { zhHans: '未找到结果', zhHant: '未找到結果', en: 'No results found' },
   'win.palettePlaceholder': {

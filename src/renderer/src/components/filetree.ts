@@ -5,6 +5,7 @@ import type { AppState } from '@/state'
 import { bus } from '@/bus'
 import { t } from '@/i18n'
 import type { FileNode, PopupItem } from '@shared/types'
+import { isMarkdownPath } from '@shared/types'
 import type { RendererApi } from '@shared/ipc'
 
 const api = (window as unknown as { api: RendererApi }).api
@@ -16,6 +17,9 @@ const SVG_FOLDER =
   '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.75 3.25c0-.83.67-1.5 1.5-1.5h2.88c.4 0 .78.16 1.06.44l1.06 1.06h4.5c.83 0 1.5.67 1.5 1.5v7.5c0 .83-.67 1.5-1.5 1.5h-9.5c-.83 0-1.5-.67-1.5-1.5z"/></svg>'
 const SVG_FILE =
   '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M4 1.75h5.19L12.25 4.8V14a.25.25 0 0 1-.25.25H4a.25.25 0 0 1-.25-.25V2a.25.25 0 0 1 .25-.25z"/><path d="M9 1.75V5h3.25"/><path d="M5.75 8.5h4.5M5.75 11h4.5" stroke-linecap="round"/></svg>'
+/** 代码/文本文件图标(代码括号) */
+const SVG_CODE =
+  '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5 1.75 8 5 11.5"/><path d="M11 4.5 14.25 8 11 11.5"/><path d="M9.25 3 6.75 13"/></svg>'
 const SVG_REFRESH =
   '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 1.5v3h-3"/></svg>'
 
@@ -144,8 +148,10 @@ export function initFiletree(): void {
     twist.className = 'ft-twist'
     if (n.isDir) twist.innerHTML = SVG_CHEVRON
     const icon = document.createElement('span')
-    icon.className = 'ft-icon'
-    icon.innerHTML = n.isDir ? SVG_FOLDER : SVG_FILE
+    // 代码/文本文件用代码图标 + .code 类(md 保持文档图标)
+    const isCode = !n.isDir && !isMarkdownPath(n.path)
+    icon.className = 'ft-icon' + (isCode ? ' code' : '')
+    icon.innerHTML = n.isDir ? SVG_FOLDER : isCode ? SVG_CODE : SVG_FILE
     const name = document.createElement('span')
     name.className = 'ft-name'
     name.textContent = n.name

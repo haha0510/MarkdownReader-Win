@@ -14,6 +14,11 @@ import powershell from 'highlight.js/lib/languages/powershell'
 import dart from 'highlight.js/lib/languages/dart'
 import scala from 'highlight.js/lib/languages/scala'
 import http from 'highlight.js/lib/languages/http'
+import dos from 'highlight.js/lib/languages/dos'
+import cmake from 'highlight.js/lib/languages/cmake'
+import properties from 'highlight.js/lib/languages/properties'
+import groovy from 'highlight.js/lib/languages/groovy'
+import x86asm from 'highlight.js/lib/languages/x86asm'
 import type { OutlineItem } from '@shared/types'
 import { MD_EXTENSIONS } from '@shared/types'
 import { plantumlBlockHtml } from './plantuml'
@@ -34,6 +39,11 @@ hljs.registerLanguage('powershell', powershell)
 hljs.registerLanguage('dart', dart)
 hljs.registerLanguage('scala', scala)
 hljs.registerLanguage('http', http)
+hljs.registerLanguage('dos', dos)
+hljs.registerLanguage('cmake', cmake)
+hljs.registerLanguage('properties', properties)
+hljs.registerLanguage('groovy', groovy)
+hljs.registerLanguage('x86asm', x86asm)
 
 // ── 每次 render 期间的临时状态(单线程,渲染同步完成) ──
 let outlineCollector: OutlineItem[] = []
@@ -290,4 +300,93 @@ export function extractOutline(src: string): OutlineItem[] {
   const outline = outlineCollector
   outlineCollector = [] // 断开与模块态的别名,避免后续渲染误改返回值
   return outline
+}
+
+// ── 代码/文本文件直读视图(非 markdown 的 currentFile) ──
+
+/** 扩展名(去点小写)→ hljs 语言名;未列出或未注册的语言降级纯转义 */
+const CODE_LANG_BY_EXT: Record<string, string> = {
+  c: 'c',
+  h: 'c',
+  cpp: 'cpp',
+  hpp: 'cpp',
+  cc: 'cpp',
+  cxx: 'cpp',
+  py: 'python',
+  js: 'javascript',
+  mjs: 'javascript',
+  cjs: 'javascript',
+  jsx: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  json: 'json',
+  sh: 'bash',
+  bash: 'bash',
+  bat: 'dos',
+  cmd: 'dos',
+  ps1: 'powershell',
+  ini: 'ini',
+  conf: 'ini',
+  cfg: 'ini',
+  toml: 'ini',
+  properties: 'properties',
+  yaml: 'yaml',
+  yml: 'yaml',
+  xml: 'xml',
+  html: 'xml',
+  htm: 'xml',
+  vue: 'xml',
+  svelte: 'xml',
+  css: 'css',
+  scss: 'scss',
+  less: 'less',
+  java: 'java',
+  kt: 'kotlin',
+  go: 'go',
+  rs: 'rust',
+  rb: 'ruby',
+  php: 'php',
+  sql: 'sql',
+  lua: 'lua',
+  dart: 'dart',
+  swift: 'swift',
+  m: 'objectivec',
+  mm: 'objectivec',
+  s: 'x86asm',
+  asm: 'x86asm',
+  cmake: 'cmake',
+  mk: 'makefile',
+  gradle: 'groovy'
+}
+
+/** 无后缀特例文件名(小写)→ hljs 语言名 */
+const CODE_LANG_BY_NAME: Record<string, string> = {
+  makefile: 'makefile',
+  gnumakefile: 'makefile',
+  dockerfile: 'dockerfile',
+  jenkinsfile: 'groovy'
+}
+
+/** 超过 1MB 直接纯文本不高亮(防卡) */
+const CODE_HIGHLIGHT_MAX = 1024 * 1024
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+/**
+ * 渲染代码/纯文本文件为高亮 HTML(同步)。
+ * 输出 `<pre class="hljs code-file">`,复用 markdown 代码块的主题样式与复制按钮机制。
+ */
+export function renderCodeFile(src: string, filePath: string): string {
+  const base = toSlash(filePath).slice(toSlash(filePath).lastIndexOf('/') + 1).toLowerCase()
+  const dot = base.lastIndexOf('.')
+  const ext = dot > 0 ? base.slice(dot + 1) : ''
+  const lang = CODE_LANG_BY_EXT[ext] ?? CODE_LANG_BY_NAME[base] ?? ''
+  const canHighlight = src.length <= CODE_HIGHLIGHT_MAX && !!lang && !!hljs.getLanguage(lang)
+  const body = canHighlight
+    ? hljs.highlight(src, { language: lang, ignoreIllegals: true }).value
+    : escapeHtml(src)
+  const cls = canHighlight ? `language-${lang} hljs` : 'hljs'
+  return `<pre class="hljs code-file"><code class="${cls}">${body}</code></pre>\n`
 }

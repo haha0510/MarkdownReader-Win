@@ -270,6 +270,8 @@ export const strings = {
   "win.languageReloadHint": { zhHans: "语言已更改，部分界面在重启应用后完全生效", zhHant: "語言已更改，部分介面在重新啟動應用後完全生效", en: "Language changed. Some UI updates fully after restart." },
   "win.resetSettings": { zhHans: "重置为默认设置", zhHant: "重設為預設設定", en: "Reset to Defaults" },
   "win.emptyTree": { zhHans: "此目录下没有 Markdown 文件", zhHant: "此目錄下沒有 Markdown 檔案", en: "No Markdown files in this folder" },
+  "win.showCodeFiles": { zhHans: "显示代码/文本文件", zhHant: "顯示程式碼/文字檔案", en: "Show code/text files" },
+  "win.showCodeFilesHint": { zhHans: "在目录树中显示 .c/.py/.json 等代码与纯文本文件", zhHant: "在目錄樹中顯示 .c/.py/.json 等程式碼與純文字檔案", en: "Show source code and plain text files in the file tree" },
   "win.emptyOutline": { zhHans: "暂无标题", zhHant: "暫無標題", en: "No headings" },
   "win.paletteNoResults": { zhHans: "未找到结果", zhHant: "未找到結果", en: "No results found" },
   "win.palettePlaceholder": { zhHans: "按名称搜索文件…", zhHant: "按名稱搜尋檔案…", en: "Search files by name…" },

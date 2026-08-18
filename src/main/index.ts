@@ -4,7 +4,7 @@ import { existsSync, statSync } from 'fs'
 import path from 'path'
 import { IPC } from '@shared/ipc'
 import type { WindowBounds } from '@shared/types'
-import { MD_EXTENSIONS } from '@shared/types'
+import { isMarkdownPath, isTextPath } from '@shared/types'
 import { registerIpc, wireFindEvents } from './ipc'
 import { setupMenu } from './menu'
 import { registerProtocol } from './protocol'
@@ -30,7 +30,7 @@ let forceClose = false
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
 
-// 从 argv 提取存在于磁盘的 md 文件或目录(跳过开关参数/应用自身路径)
+// 从 argv 提取存在于磁盘的 md/文本文件或目录(跳过开关参数/应用自身路径)
 function extractOpenPaths(argv: string[], baseDir: string): string[] {
   const out: string[] = []
   for (const raw of argv.slice(1)) {
@@ -40,7 +40,7 @@ function extractOpenPaths(argv: string[], baseDir: string): string[] {
       if (abs === app.getAppPath() || abs === path.resolve(process.execPath)) continue
       if (!existsSync(abs)) continue
       const st = statSync(abs)
-      if (st.isDirectory() || (st.isFile() && MD_EXTENSIONS.includes(path.extname(abs).toLowerCase()))) {
+      if (st.isDirectory() || (st.isFile() && (isMarkdownPath(abs) || isTextPath(abs)))) {
         out.push(norm(abs))
       }
     } catch {

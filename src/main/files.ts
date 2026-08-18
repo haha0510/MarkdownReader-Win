@@ -3,12 +3,17 @@ import { promises as fsp } from 'fs'
 import path from 'path'
 import { shell } from 'electron'
 import type { FileContent, FileNode } from '@shared/types'
-import { MD_EXTENSIONS } from '@shared/types'
+import { MD_EXTENSIONS, isTextPath } from '@shared/types'
 import type { SearchHit } from '@shared/ipc'
+import { getSettings } from './store'
 
 const norm = (p: string): string => p.replace(/\\/g, '/')
 
 const isMdFile = (name: string): boolean => MD_EXTENSIONS.includes(path.extname(name).toLowerCase())
+
+// 目录树/搜索共用的文件过滤:md 恒显示;代码/文本文件按 settings.showCodeFiles
+const isShownFile = (name: string): boolean =>
+  isMdFile(name) || (getSettings().showCodeFiles && isTextPath(name))
 
 // 跳过隐藏项与 node_modules
 const skipName = (name: string): boolean => name.startsWith('.') || name === 'node_modules'
@@ -31,7 +36,7 @@ async function buildChildren(dir: string): Promise<FileNode[]> {
     const full = path.join(dir, ent.name)
     if (ent.isDirectory()) {
       dirs.push({ name: ent.name, path: norm(full), isDir: true, children: await buildChildren(full) })
-    } else if (ent.isFile() && isMdFile(ent.name)) {
+    } else if (ent.isFile() && isShownFile(ent.name)) {
       files.push({ name: ent.name, path: norm(full), isDir: false })
     }
     // 符号链接一律跳过(isDirectory/isFile 均为 false)
@@ -143,7 +148,7 @@ export async function moveEntry(srcPath: string, destDir: string): Promise<{ pat
   return { path: norm(target) }
 }
 
-// 递归收集根目录下全部 md 文件路径(规则与目录树一致:跳过隐藏项与 node_modules)
+// 递归收集根目录下全部可搜索文件路径(与目录树同过滤:md ∪ 代码/文本;跳过隐藏项与 node_modules)
 async function collectMdFiles(dir: string, out: string[]): Promise<void> {
   let entries
   try {
@@ -155,7 +160,7 @@ async function collectMdFiles(dir: string, out: string[]): Promise<void> {
     if (skipName(ent.name)) continue
     const full = path.join(dir, ent.name)
     if (ent.isDirectory()) await collectMdFiles(full, out)
-    else if (ent.isFile() && isMdFile(ent.name)) out.push(full)
+    else if (ent.isFile() && isShownFile(ent.name)) out.push(full)
   }
 }
 

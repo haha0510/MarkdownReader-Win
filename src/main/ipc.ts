@@ -5,6 +5,7 @@ import path from 'path'
 import { IPC } from '@shared/ipc'
 import type { AiRequest, FindOptions } from '@shared/ipc'
 import type { PopupItem, SessionState, Settings } from '@shared/types'
+import { CODE_EXTENSIONS, MD_EXTENSIONS } from '@shared/types'
 import * as files from './files'
 import { cancelAi, streamAi, testAi } from './ai'
 import { exportPdf } from './pdf'
@@ -53,7 +54,14 @@ export function registerIpc(): void {
       kind === 'file'
         ? {
             properties: ['openFile'],
-            filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mdx'] }]
+            filters: [
+              // 全部支持类型(md + 代码/文本);Makefile 等无后缀特例经拖拽/命令行打开
+              {
+                name: 'All supported',
+                extensions: [...MD_EXTENSIONS, ...CODE_EXTENSIONS].map((x) => x.slice(1))
+              },
+              { name: 'Markdown', extensions: MD_EXTENSIONS.map((x) => x.slice(1)) }
+            ]
           }
         : { properties: ['openDirectory'] }
     const win = winOf(e)

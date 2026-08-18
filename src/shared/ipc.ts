@@ -11,7 +11,7 @@ import type {
 export const IPC = {
   /** invoke ('file'|'folder') → string | null(取消) */
   DialogOpen: 'dialog:open',
-  /** invoke (rootDir: string) → FileNode(递归全树,只含 md 文件与目录) */
+  /** invoke (rootDir: string) → FileNode(递归全树,含 md 文件与目录;settings.showCodeFiles 时并入代码/文本文件) */
   FsReadTree: 'fs:readTree',
   /** invoke (path: string) → FileContent */
   FsReadFile: 'fs:readFile',

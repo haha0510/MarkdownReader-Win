@@ -1,10 +1,10 @@
-// 目录监控 — chokidar v4;多根工作区:单 watcher 监控路径数组;结构变化去抖重建全部树,md 内容变化即时通知
+// 目录监控 — chokidar v4;多根工作区:单 watcher 监控路径数组;结构变化去抖重建全部树,md/文本内容变化即时通知
 import { watch, FSWatcher } from 'chokidar'
 import path from 'path'
 import type { WebContents } from 'electron'
 import type { FileNode } from '@shared/types'
 import { IPC } from '@shared/ipc'
-import { MD_EXTENSIONS } from '@shared/types'
+import { isMarkdownPath, isTextPath } from '@shared/types'
 import { readTree } from './files'
 import { resetAllowedRoots } from './protocol'
 
@@ -92,8 +92,8 @@ export async function setWatchRoots(roots: string[] | null): Promise<void> {
   })
 
   watcher.on('all', (event, p) => {
-    // markdown 文件内容变化 → 立即推送(外部修改检测)
-    if (event === 'change' && MD_EXTENSIONS.includes(path.extname(p).toLowerCase())) {
+    // markdown/代码文本文件内容变化 → 立即推送(外部修改检测;渲染器只响应当前打开文件)
+    if (event === 'change' && (isMarkdownPath(p) || isTextPath(p))) {
       send(IPC.EvFileChanged, norm(path.resolve(p)))
     }
     // 纯内容变化不影响目录结构,不必重建树(避免每次 Ctrl+S 后侧栏重绘)

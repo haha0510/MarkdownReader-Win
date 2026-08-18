@@ -127,6 +127,12 @@ html[data-outline='true'] #findbar {
   display: block;
 }
 
+/* ── 代码/文本文件直读视图(非 md 的 currentFile,viewer.ts renderCodeFile 产出)── */
+.markdown-body pre.code-file {
+  margin: 0;
+  tab-size: 4;
+}
+
 /* ── 锚点滚动偏移(大纲跳转 / 页内锚点 / 脚注)── */
 #viewer h1,
 #viewer h2,

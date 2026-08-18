@@ -53,6 +53,8 @@ export interface Settings {
   editorWordWrap: boolean
   /** 自动保存:编辑停顿后自动写回本地文件 */
   autoSave: boolean
+  /** 目录树中显示代码/纯文本文件(CODE_EXTENSIONS/TEXT_BASENAMES) */
+  showCodeFiles: boolean
   /** AI 服务地址(OpenAI 兼容,如 https://api.deepseek.com) */
   aiBaseUrl: string
   /** AI API Key */
@@ -104,6 +106,7 @@ export const DEFAULT_SETTINGS: Settings = {
   plantumlServer: 'https://www.plantuml.com/plantuml',
   editorWordWrap: true,
   autoSave: true,
+  showCodeFiles: true,
   aiBaseUrl: '',
   aiApiKey: '',
   aiModel: 'deepseek-chat',
@@ -133,6 +136,42 @@ export interface FileContent {
 
 /** 目录树中显示的 markdown 扩展名 */
 export const MD_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mdx']
+
+/** 目录树中显示的代码/纯文本扩展名(Settings.showCodeFiles 控制;查看/编辑走纯文本视图) */
+export const CODE_EXTENSIONS = [
+  '.c', '.h', '.cpp', '.hpp', '.cc', '.cxx',
+  '.py', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.json',
+  '.txt', '.log', '.sh', '.bash', '.bat', '.cmd', '.ps1',
+  '.ini', '.conf', '.cfg', '.toml', '.yaml', '.yml',
+  '.xml', '.html', '.htm', '.css', '.scss', '.less',
+  '.java', '.kt', '.go', '.rs', '.rb', '.php', '.sql', '.lua',
+  '.dart', '.swift', '.m', '.mm', '.s', '.asm',
+  '.cmake', '.mk', '.gradle', '.properties', '.vue', '.svelte'
+]
+
+/** 无扩展名但按文件名视为文本的特例(小写比较;CMakeLists.txt 已被 .txt 覆盖) */
+export const TEXT_BASENAMES = ['makefile', 'gnumakefile', 'dockerfile', 'jenkinsfile']
+
+/** 取末段文件名(兼容正/反斜杠),小写 */
+const lowerBase = (p: string): string =>
+  p.slice(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1).toLowerCase()
+
+/** 小写扩展名(含点);隐藏文件式的 ".xxx" 不算扩展名 */
+const lowerExt = (base: string): string => {
+  const i = base.lastIndexOf('.')
+  return i > 0 ? base.slice(i) : ''
+}
+
+/** 是否 markdown 文件路径(小写后缀判断;可传纯文件名) */
+export function isMarkdownPath(p: string): boolean {
+  return MD_EXTENSIONS.includes(lowerExt(lowerBase(p)))
+}
+
+/** 是否代码/纯文本文件路径(不含 markdown;Makefile/Dockerfile 等特例按 basename 匹配) */
+export function isTextPath(p: string): boolean {
+  const base = lowerBase(p)
+  return CODE_EXTENSIONS.includes(lowerExt(base)) || TEXT_BASENAMES.includes(base)
+}
 
 /** 右键菜单模板项(渲染器 → 主进程 Menu.popup) */
 export interface PopupItem {

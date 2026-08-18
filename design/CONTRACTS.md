@@ -98,7 +98,7 @@ Ctrl+O 打开文件、Ctrl+Shift+O 打开文件夹、Ctrl+N 新建、Ctrl+S 保�
 - settings.json / session.json 存 `app.getPath('userData')`,写入原子(先写 tmp 再 rename),读失败回默认值。
 - 菜单:注册第 7 节加速键(菜单不可见也要 `Menu.setApplicationMenu`,Windows 下 hidden titlebar 无菜单栏,但加速键生效);另注册 F12/Ctrl+Shift+I 开 DevTools(仅 dev)。
 - PDF:`ExportPdf` → 显示保存对话框(默认名 suggestedName + '.pdf')→ `webContents.printToPDF({printBackground:true, preferCSSPageSize:false, margins 默认})`。渲染器侧(D)导出前给 body 加 `.exporting-pdf` class……不,简化:主进程直接 printToPDF 当前页面,viewer.css 提供 `@media print`:隐藏 titlebar/sidebar/outline/findbar,正文全宽。
-- `dialog:open`:file kind filter `[{name:'Markdown', extensions:['md','markdown','mdown','mkd','mdx']}]`。
+- `dialog:open`:file kind filter `[{name:'All supported', extensions:[md ∪ CODE_EXTENSIONS]}, {name:'Markdown', extensions:['md','markdown','mdown','mkd','mdx']}]`(代码/文本文件与 md 同样可打开查看/编辑;目录树按 settings.showCodeFiles 决定是否显示代码文件)。
 - 外部修改弹窗逻辑在渲染器(C):未 dirty 自动重载 + toast;dirty 则 confirm。
 - 删除一律 `shell.trashItem`。
 

@@ -6,11 +6,12 @@ import { Compartment, EditorState, Prec } from '@codemirror/state'
 import type { Extension } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
-import { HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { HighlightStyle, LanguageDescription, syntaxHighlighting } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { store } from '@/state'
 import { bus } from '@/bus'
 import { t } from '@/i18n'
+import { isMarkdownPath } from '@shared/types'
 import { extractOutline } from '@/markdown/render'
 
 let view: EditorView | null = null
@@ -23,6 +24,35 @@ export function getEditorView(): EditorView | null {
 // ── 自动换行 compartment ──
 const wrapCompartment = new Compartment()
 const wrapExt = (on: boolean): Extension => (on ? EditorView.lineWrapping : [])
+
+// ── 语言 compartment:md 同步用 markdown();其他文件按文件名异步匹配注入(不阻塞打开)──
+const langCompartment = new Compartment()
+/** 语言加载令牌:文件切换后过期的 load 结果作废 */
+let langSeq = 0
+
+/** 当前文件的同步初始语言扩展:md(或无文件)→ markdown;代码文件先纯文本 */
+function initialLangExt(path: string | null): Extension {
+  if (path === null || isMarkdownPath(path)) return markdown({ codeLanguages: languages })
+  return []
+}
+
+/** 代码文件:按 basename 匹配 @codemirror/language-data,命中则异步加载后 reconfigure */
+function scheduleLanguageLoad(path: string | null): void {
+  const my = ++langSeq
+  if (path === null || isMarkdownPath(path)) return
+  const base = path.slice(path.lastIndexOf('/') + 1)
+  const desc = LanguageDescription.matchFilename(languages, base)
+  if (!desc) return // 未命中:保持纯文本
+  desc
+    .load()
+    .then((support) => {
+      if (my !== langSeq || !view) return // 已切换文件/编辑器未建
+      view.dispatch({ effects: langCompartment.reconfigure(support) })
+    })
+    .catch(() => {
+      /* 语言包加载失败:保持纯文本 */
+    })
+}
 
 // ── 主题:静态定义,颜色用 var() 字符串,主题变量变化时实时生效 ──
 const cmTheme = EditorView.theme({
@@ -238,14 +268,16 @@ function scrollEditorToHeading(id: string): void {
   })
 }
 
-/** 每文件全新状态(撤销栈随之重置) */
+/** 每文件全新状态(撤销栈随之重置);语言按当前文件类型选择,代码文件语言异步注入 */
 function freshState(doc: string): EditorState {
+  const path = store.get().currentFile
+  scheduleLanguageLoad(path)
   return EditorState.create({
     doc,
     extensions: [
       basicSetup,
       syntaxHighlighting(cmHighlight),
-      markdown({ codeLanguages: languages }),
+      langCompartment.of(initialLangExt(path)),
       wrapCompartment.of(wrapExt(store.get().settings.editorWordWrap)),
       cmTheme,
       // Mod-S 高优先级保存(菜单加速键之外的双保险)
