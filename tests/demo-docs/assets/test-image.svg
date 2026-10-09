@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120">
+  <rect width="320" height="120" rx="12" fill="#3b82f6"/>
+  <text x="160" y="68" font-family="sans-serif" font-size="20" fill="#fff" text-anchor="middle">本地图片加载成功 (mdr://)</text>
+</svg>

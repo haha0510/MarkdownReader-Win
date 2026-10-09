@@ -13,7 +13,8 @@
     "icon": "node scripts/make-icon.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "dist": "electron-vite build && electron-builder --win",
-    "e2e": "node tests/e2e.mjs"
+    "e2e": "node tests/e2e.mjs",
+    "shots": "node tests/shoot-readme.mjs"
   },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.3.0",
